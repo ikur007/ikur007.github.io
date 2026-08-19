@@ -93,7 +93,16 @@
     letter-spacing: 0.02em;
   }
   .sub span{ color: var(--accent); }
-
+  .poc-log{
+    margin-top: 22px;
+    padding-top: 16px;
+    border-top: 1px dashed var(--line);
+    font-size: 11px;
+    line-height: 1.8;
+    color: var(--muted);
+  }
+  .poc-log .k{ color: var(--muted); }
+  .poc-log .v{ color: var(--accent); word-break: break-all; }
   @media (max-width: 520px){
     .frame{ padding: 32px 24px; }
     .frame::before{ font-size: 10px; }
@@ -107,7 +116,19 @@
       <p class="eyebrow">welcome to</p>
       <h1>ikur<span class="zeros">007</span><span class="cursor">&nbsp;</span></h1>
       <p class="sub">status: <span>online</span></p>
+
+      <div class="poc-log">
+        <div><span class="k">referrer:</span> <span class="v" id="ref"></span></div>
+        <div><span class="k">landed_at:</span> <span class="v" id="time"></span></div>
+        <div><span class="k">url:</span> <span class="v" id="url"></span></div>
+      </div>
     </div>
   </div>
+
+  <script>
+    document.getElementById('ref').textContent = document.referrer || '(empty — no referrer sent)';
+    document.getElementById('time').textContent = new Date().toISOString();
+    document.getElementById('url').textContent = window.location.href;
+  </script>
 </body>
 </html>
