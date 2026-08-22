@@ -194,30 +194,43 @@
         new Date().toISOString();
       document.getElementById("url").textContent = window.location.href;
 
-      // --- IP Fetch dengan Fallback ---
+      // --- IP Fetch dengan Fallback LENGKAP ---
       async function getIP() {
         const ipElement = document.getElementById("ip");
 
         try {
-          // Coba API 1 (ipify)
-          let res = await fetch("https://api.ipify.org?format=json");
-          let data = await res.json();
-          ipElement.textContent = data.ip;
+          // Coba 1: Cloudflare Trace (Paling tangguh tembus adblock/Firefox)
+          let res1 = await fetch("https://1.1.1.1/cdn-cgi/trace");
+          let data1 = await res1.text();
+          let lines = data1.split("\n");
+          let ipLine = lines.find((line) => line.startsWith("ip="));
+          if (ipLine) {
+            ipElement.textContent = ipLine.split("=")[1];
+          } else {
+            throw new Error("Cloudflare gagal");
+          }
         } catch (e1) {
           try {
-            // Jika gagal/diblokir adblock, Coba API 2 (db-ip)
-            let res2 = await fetch("https://api.db-ip.com/v2/free/self");
+            // Coba 2: API ipify
+            let res2 = await fetch("https://api.ipify.org?format=json");
             let data2 = await res2.json();
-            ipElement.textContent = data2.ipAddress;
+            ipElement.textContent = data2.ip;
           } catch (e2) {
             try {
-              // Jika masih gagal, Coba API 3 (jsonip)
-              let res3 = await fetch("https://jsonip.com");
+              // Coba 3: API db-ip
+              let res3 = await fetch("https://api.db-ip.com/v2/free/self");
               let data3 = await res3.json();
-              ipElement.textContent = data3.ip;
+              ipElement.textContent = data3.ipAddress;
             } catch (e3) {
-              // Jika semua gagal
-              ipElement.textContent = "Blocked by Browser/Adblock";
+              try {
+                // Coba 4: API jsonip
+                let res4 = await fetch("https://jsonip.com");
+                let data4 = await res4.json();
+                ipElement.textContent = data4.ip;
+              } catch (e4) {
+                // Jika semua diblokir
+                ipElement.textContent = "Blocked by Browser/Adblock";
+              }
             }
           }
         }
