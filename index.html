@@ -202,8 +202,9 @@
     </div>
 
     <script>
-      // --- URL Google Apps Script Kamu (Ganti teks di bawah dengan URL Web App milikmu) ---
-      const GOOGLE_SHEETS_API = "URL_APPS_SCRIPT_KAMU_DISINI";
+      // --- URL Google Apps Script Kamu ---
+      const GOOGLE_SHEETS_API =
+        "https://script.google.com/macros/s/AKfycbxu7daGGFCD2haZQCfs6xQYYT4Vzr6B0Kne8aGS_rjrwSw16sd03L12VUnoW35ucZSX/exec";
 
       // --- Referrer, Time, URL ---
       document.getElementById("ref").textContent =
@@ -213,13 +214,10 @@
       document.getElementById("url").textContent = window.location.href;
 
       // --- Fungsi Ambil 10 Riwayat Global dari Google Sheets ---
+      // (pengecekan placeholder dihapus — URL API sudah diisi dengan benar,
+      //  jadi langsung fetch tanpa perlu dicek dulu)
       function loadGlobalHistory() {
         const container = document.getElementById("history-list");
-        if (GOOGLE_SHEETS_API === "URL_APPS_SCRIPT_KAMU_DISINI") {
-          container.innerHTML =
-            "<span style='color:#ffb454'>URL API belum diatur.</span>";
-          return;
-        }
 
         fetch(GOOGLE_SHEETS_API)
           .then((res) => res.json())
@@ -272,9 +270,9 @@
       );
 
       // --- Kirim Data Pengunjung Baru ke Google Sheets ---
+      // (pengecekan placeholder juga dihapus di sini — ini yang tadinya
+      //  bikin data IP kamu nggak pernah benar-benar terkirim)
       function sendVisitorToServer(ipToSave) {
-        if (GOOGLE_SHEETS_API === "URL_APPS_SCRIPT_KAMU_DISINI") return;
-
         const nowInfo = new Date();
         const timeStr =
           nowInfo.toLocaleDateString("id-ID", { timeZone: "Asia/Jakarta" }) +
@@ -290,10 +288,14 @@
         fetch(GOOGLE_SHEETS_API, {
           method: "POST",
           body: JSON.stringify(dataToSave),
-        }).then(() => {
-          // Refresh daftar setelah data berhasil masuk
-          loadGlobalHistory();
-        });
+        })
+          .then(() => {
+            // Refresh daftar setelah data berhasil masuk
+            loadGlobalHistory();
+          })
+          .catch((err) => {
+            console.error("Gagal mengirim data ke Google Sheets:", err);
+          });
       }
 
       // --- IP Fetch dengan Fallback LENGKAP ---
