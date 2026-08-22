@@ -130,6 +130,13 @@
         color: var(--accent);
         word-break: break-all;
       }
+
+      .history-section {
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px dashed var(--line);
+      }
+
       @media (max-width: 520px) {
         .frame {
           padding: 32px 24px;
@@ -182,6 +189,14 @@
             <span class="k">user_agent:</span>
             <span class="v" id="ua">Loading...</span>
           </div>
+
+          <!-- Bagian History 10 Pengunjung -->
+          <div class="history-section">
+            <div class="k" style="margin-bottom: 8px">
+              --- 10 RECENT LOGINS (LOCAL) ---
+            </div>
+            <div id="history-list">Memuat riwayat...</div>
+          </div>
         </div>
       </div>
     </div>
@@ -194,18 +209,50 @@
         new Date().toISOString();
       document.getElementById("url").textContent = window.location.href;
 
+      // --- Fungsi Simpan 10 Riwayat ---
+      function handleVisitorHistory(ipToSave) {
+        const nowInfo = new Date();
+        const currentVisit = {
+          ip: ipToSave,
+          time: nowInfo.toLocaleTimeString("id-ID", {
+            timeZone: "Asia/Jakarta",
+          }),
+          date: nowInfo.toLocaleDateString("id-ID", {
+            timeZone: "Asia/Jakarta",
+          }),
+        };
+
+        // Ambil data lama, tambah yang baru di depan, potong jadi 10 max
+        let history = JSON.parse(
+          localStorage.getItem("visitor_history") || "[]",
+        );
+        history.unshift(currentVisit);
+        history = history.slice(0, 10);
+        localStorage.setItem("visitor_history", JSON.stringify(history));
+
+        // Tampilkan ke layar
+        const container = document.getElementById("history-list");
+        container.innerHTML = history
+          .map(
+            (item, i) =>
+              `<div><span class="k">[${i + 1}]</span> <span class="v">${item.ip} (${item.date} ${item.time})</span></div>`,
+          )
+          .join("");
+      }
+
       // --- IP Fetch dengan Fallback LENGKAP ---
       async function getIP() {
         const ipElement = document.getElementById("ip");
+        let finalIP = "Unknown";
 
         try {
-          // Coba 1: Cloudflare Trace (Paling tangguh tembus adblock/Firefox)
+          // Coba 1: Cloudflare Trace
           let res1 = await fetch("https://1.1.1.1/cdn-cgi/trace");
           let data1 = await res1.text();
           let lines = data1.split("\n");
           let ipLine = lines.find((line) => line.startsWith("ip="));
           if (ipLine) {
-            ipElement.textContent = ipLine.split("=")[1];
+            finalIP = ipLine.split("=")[1];
           } else {
             throw new Error("Cloudflare gagal");
           }
@@ -214,51 +261,47 @@
             // Coba 2: API ipify
             let res2 = await fetch("https://api.ipify.org?format=json");
             let data2 = await res2.json();
-            ipElement.textContent = data2.ip;
+            finalIP = data2.ip;
           } catch (e2) {
             try {
               // Coba 3: API db-ip
               let res3 = await fetch("https://api.db-ip.com/v2/free/self");
               let data3 = await res3.json();
-              ipElement.textContent = data3.ipAddress;
+              finalIP = data3.ipAddress;
             } catch (e3) {
               try {
                 // Coba 4: API jsonip
                 let res4 = await fetch("https://jsonip.com");
                 let data4 = await res4.json();
-                ipElement.textContent = data4.ip;
+                finalIP = data4.ip;
               } catch (e4) {
                 // Jika semua diblokir
-                ipElement.textContent = "Blocked by Browser/Adblock";
+                finalIP = "Blocked by Browser/Adblock";
               }
             }
           }
         }
+
+        ipElement.textContent = finalIP;
+        handleVisitorHistory(finalIP); // Panggil riwayat setelah dapat IP
       }
       getIP();
 
       // --- Date & Time (Asia/Jakarta) ---
       const now = new Date();
-
       document.getElementById("date").textContent = now.toLocaleDateString(
         "id-ID",
-        {
-          timeZone: "Asia/Jakarta",
-        },
+        { timeZone: "Asia/Jakarta" },
       );
-
       document.getElementById("clock").textContent = now.toLocaleTimeString(
         "id-ID",
-        {
-          timeZone: "Asia/Jakarta",
-        },
+        { timeZone: "Asia/Jakarta" },
       );
 
-      // --- User-Agent ---
+      // --- User-Agent & Browser ---
       const ua = navigator.userAgent;
       document.getElementById("ua").textContent = ua;
 
-      // --- Browser Detection ---
       function getBrowser() {
         if (ua.includes("Edg/")) return "Microsoft Edge";
         if (ua.includes("OPR/") || ua.includes("Opera")) return "Opera";
@@ -268,7 +311,6 @@
         if (ua.includes("Safari/") && !ua.includes("Chrome/")) return "Safari";
         return "Unknown";
       }
-
       document.getElementById("browser").textContent = getBrowser();
     </script>
   </body>
