@@ -190,18 +190,21 @@
             <span class="v" id="ua">Loading...</span>
           </div>
 
-          <!-- Bagian History 10 Pengunjung -->
+          <!-- Bagian History 10 Pengunjung Global -->
           <div class="history-section">
             <div class="k" style="margin-bottom: 8px">
-              --- 10 RECENT LOGINS (LOCAL) ---
+              --- 10 RECENT VISITORS (GLOBAL) ---
             </div>
-            <div id="history-list">Memuat riwayat...</div>
+            <div id="history-list">Menghubungkan ke database...</div>
           </div>
         </div>
       </div>
     </div>
 
     <script>
+      // --- URL Google Apps Script Kamu (Ganti teks di bawah dengan URL Web App milikmu) ---
+      const GOOGLE_SHEETS_API = "URL_APPS_SCRIPT_KAMU_DISINI";
+
       // --- Referrer, Time, URL ---
       document.getElementById("ref").textContent =
         document.referrer || "(empty — no referrer sent)";
@@ -209,35 +212,88 @@
         new Date().toISOString();
       document.getElementById("url").textContent = window.location.href;
 
-      // --- Fungsi Simpan 10 Riwayat ---
-      function handleVisitorHistory(ipToSave) {
+      // --- Fungsi Ambil 10 Riwayat Global dari Google Sheets ---
+      function loadGlobalHistory() {
+        const container = document.getElementById("history-list");
+        if (GOOGLE_SHEETS_API === "URL_APPS_SCRIPT_KAMU_DISINI") {
+          container.innerHTML =
+            "<span style='color:#ffb454'>URL API belum diatur.</span>";
+          return;
+        }
+
+        fetch(GOOGLE_SHEETS_API)
+          .then((res) => res.json())
+          .then((data) => {
+            if (!data || data.length === 0) {
+              container.innerHTML = "Belum ada data pengunjung.";
+              return;
+            }
+            container.innerHTML = data
+              .map(
+                (item, i) =>
+                  `<div><span class="k">[${i + 1}]</span> <span class="v">${item.ip} — ${item.waktu}</span></div>`,
+              )
+              .join("");
+          })
+          .catch(() => {
+            container.innerHTML =
+              "<span style='color:red'>Gagal memuat riwayat.</span>";
+          });
+      }
+
+      // Langsung muat riwayat saat halaman dibuka
+      loadGlobalHistory();
+
+      // --- User-Agent & Browser ---
+      const ua = navigator.userAgent;
+      document.getElementById("ua").textContent = ua;
+
+      function getBrowser() {
+        if (ua.includes("Edg/")) return "Microsoft Edge";
+        if (ua.includes("OPR/") || ua.includes("Opera")) return "Opera";
+        if (ua.includes("Chrome/") && !ua.includes("Edg/"))
+          return "Google Chrome";
+        if (ua.includes("Firefox/")) return "Mozilla Firefox";
+        if (ua.includes("Safari/") && !ua.includes("Chrome/")) return "Safari";
+        return "Unknown";
+      }
+      const myBrowser = getBrowser();
+      document.getElementById("browser").textContent = myBrowser;
+
+      // --- Date & Time (Asia/Jakarta) ---
+      const now = new Date();
+      document.getElementById("date").textContent = now.toLocaleDateString(
+        "id-ID",
+        { timeZone: "Asia/Jakarta" },
+      );
+      document.getElementById("clock").textContent = now.toLocaleTimeString(
+        "id-ID",
+        { timeZone: "Asia/Jakarta" },
+      );
+
+      // --- Kirim Data Pengunjung Baru ke Google Sheets ---
+      function sendVisitorToServer(ipToSave) {
+        if (GOOGLE_SHEETS_API === "URL_APPS_SCRIPT_KAMU_DISINI") return;
+
         const nowInfo = new Date();
-        const currentVisit = {
+        const timeStr =
+          nowInfo.toLocaleDateString("id-ID", { timeZone: "Asia/Jakarta" }) +
+          " " +
+          nowInfo.toLocaleTimeString("id-ID", { timeZone: "Asia/Jakarta" });
+
+        const dataToSave = {
           ip: ipToSave,
-          time: nowInfo.toLocaleTimeString("id-ID", {
-            timeZone: "Asia/Jakarta",
-          }),
-          date: nowInfo.toLocaleDateString("id-ID", {
-            timeZone: "Asia/Jakarta",
-          }),
+          waktu: timeStr,
+          browser: myBrowser,
         };
 
-        // Ambil data lama, tambah yang baru di depan, potong jadi 10 max
-        let history = JSON.parse(
-          localStorage.getItem("visitor_history") || "[]",
-        );
-        history.unshift(currentVisit);
-        history = history.slice(0, 10);
-        localStorage.setItem("visitor_history", JSON.stringify(history));
-
-        // Tampilkan ke layar
-        const container = document.getElementById("history-list");
-        container.innerHTML = history
-          .map(
-            (item, i) =>
-              `<div><span class="k">[${i + 1}]</span> <span class="v">${item.ip} (${item.date} ${item.time})</span></div>`,
-          )
-          .join("");
+        fetch(GOOGLE_SHEETS_API, {
+          method: "POST",
+          body: JSON.stringify(dataToSave),
+        }).then(() => {
+          // Refresh daftar setelah data berhasil masuk
+          loadGlobalHistory();
+        });
       }
 
       // --- IP Fetch dengan Fallback LENGKAP ---
@@ -283,35 +339,13 @@
         }
 
         ipElement.textContent = finalIP;
-        handleVisitorHistory(finalIP); // Panggil riwayat setelah dapat IP
+
+        // Jika IP berhasil didapatkan, kirim ke database online (Google Sheets)
+        if (finalIP !== "Unknown" && finalIP !== "Blocked by Browser/Adblock") {
+          sendVisitorToServer(finalIP);
+        }
       }
       getIP();
-
-      // --- Date & Time (Asia/Jakarta) ---
-      const now = new Date();
-      document.getElementById("date").textContent = now.toLocaleDateString(
-        "id-ID",
-        { timeZone: "Asia/Jakarta" },
-      );
-      document.getElementById("clock").textContent = now.toLocaleTimeString(
-        "id-ID",
-        { timeZone: "Asia/Jakarta" },
-      );
-
-      // --- User-Agent & Browser ---
-      const ua = navigator.userAgent;
-      document.getElementById("ua").textContent = ua;
-
-      function getBrowser() {
-        if (ua.includes("Edg/")) return "Microsoft Edge";
-        if (ua.includes("OPR/") || ua.includes("Opera")) return "Opera";
-        if (ua.includes("Chrome/") && !ua.includes("Edg/"))
-          return "Google Chrome";
-        if (ua.includes("Firefox/")) return "Mozilla Firefox";
-        if (ua.includes("Safari/") && !ua.includes("Chrome/")) return "Safari";
-        return "Unknown";
-      }
-      document.getElementById("browser").textContent = getBrowser();
     </script>
   </body>
 </html>
