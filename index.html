@@ -153,7 +153,7 @@
         <div class="poc-log">
           <div>
             <span class="k">ip_address:</span>
-            <span class="v" id="ip">Loading...</span>
+            <span class="v" id="ip">Fetching...</span>
           </div>
           <div>
             <span class="k">date:</span>
@@ -187,26 +187,44 @@
     </div>
 
     <script>
-      // --- Existing Features ---
+      // --- Referrer, Time, URL ---
       document.getElementById("ref").textContent =
         document.referrer || "(empty — no referrer sent)";
       document.getElementById("landed_time").textContent =
         new Date().toISOString();
       document.getElementById("url").textContent = window.location.href;
 
-      // --- Added Features ---
+      // --- IP Fetch dengan Fallback ---
+      async function getIP() {
+        const ipElement = document.getElementById("ip");
 
-      // IP Fetch
-      fetch("https://api.ipify.org?format=json")
-        .then((response) => response.json())
-        .then((data) => {
-          document.getElementById("ip").textContent = data.ip;
-        })
-        .catch(() => {
-          document.getElementById("ip").textContent = "Failed to fetch";
-        });
+        try {
+          // Coba API 1 (ipify)
+          let res = await fetch("https://api.ipify.org?format=json");
+          let data = await res.json();
+          ipElement.textContent = data.ip;
+        } catch (e1) {
+          try {
+            // Jika gagal/diblokir adblock, Coba API 2 (db-ip)
+            let res2 = await fetch("https://api.db-ip.com/v2/free/self");
+            let data2 = await res2.json();
+            ipElement.textContent = data2.ipAddress;
+          } catch (e2) {
+            try {
+              // Jika masih gagal, Coba API 3 (jsonip)
+              let res3 = await fetch("https://jsonip.com");
+              let data3 = await res3.json();
+              ipElement.textContent = data3.ip;
+            } catch (e3) {
+              // Jika semua gagal
+              ipElement.textContent = "Blocked by Browser/Adblock";
+            }
+          }
+        }
+      }
+      getIP();
 
-      // Date & Time (Asia/Jakarta)
+      // --- Date & Time (Asia/Jakarta) ---
       const now = new Date();
 
       document.getElementById("date").textContent = now.toLocaleDateString(
@@ -223,11 +241,11 @@
         },
       );
 
-      // User-Agent
+      // --- User-Agent ---
       const ua = navigator.userAgent;
       document.getElementById("ua").textContent = ua;
 
-      // Browser Detection
+      // --- Browser Detection ---
       function getBrowser() {
         if (ua.includes("Edg/")) return "Microsoft Edge";
         if (ua.includes("OPR/") || ua.includes("Opera")) return "Opera";
