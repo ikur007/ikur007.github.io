@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>POC CSRF/XSS - Cookie Collector Demo</title>
+    <style>
+        body { font-family: monospace; background:#0f172a; color:#e2e8f0; padding:2rem; }
+        .box { background:#1e293b; padding:1.5rem; border-radius:8px; max-width:700px; margin:0 auto; }
+        h2 { color:#f87171; }
+        .stolen { background:#111827; padding:10px; border-radius:4px; word-break:break-all;
+                  border-left:4px solid #f87171; margin:10px 0; }
+        .note { font-size:0.85rem; color:#94a3b8; margin-top:1.5rem; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>🎯 POC: Data Diterima</h2>
+        <p>Jika halaman ini diakses dengan parameter <code>?cookie=...</code>,
+           nilainya akan ditampilkan di bawah (ini murni untuk demo di browser
+           yang sama — GitHub Pages statis tidak bisa mencatat/menyimpan
+           permanen data pengunjung lain).</p>
+        <div class="stolen" id="output">(menunggu data...)</div>
+
+        <div class="note">
+            Untuk demo eksfiltrasi yang benar-benar tercatat (misalnya saat
+            payload dijalankan di browser korban yang berbeda), gunakan
+            layanan logging seperti <code>webhook.site</code> sebagai
+            endpoint <code>fetch()</code> di payload XSS-nya, bukan halaman
+            statis ini. Halaman ini hanya untuk memvisualisasikan konsep
+            "data sensitif bisa dikirim keluar lewat XSS".
+        </div>
+    </div>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const cookie = params.get('cookie');
+        document.getElementById('output').textContent =
+            cookie ? cookie : '(tidak ada parameter "cookie" di URL)';
+    </script>
+</body>
+</html>
