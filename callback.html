@@ -1,0 +1,18 @@
+<!doctype html>
+<html>
+  <head>
+    <title>OAuth Callback Capture</title>
+  </head>
+  <body>
+    <h2>Captured Parameters:</h2>
+    <pre id="output"></pre>
+    <script>
+      const params = new URLSearchParams(window.location.search);
+      let out = "";
+      for (const [key, value] of params) {
+        out += key + ": " + value + "\n";
+      }
+      document.getElementById("output").textContent = out || "(no params)";
+    </script>
+  </body>
+</html>
