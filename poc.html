@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ikur POC Receiver</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 2rem; line-height: 1.5; }
+      pre { background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 6px; padding: 1rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+      .muted { color: #6b7280; }
+    </style>
+  </head>
+  <body>
+    <h1>Ikur POC Receiver</h1>
+    <p class="muted">Halaman statis GitHub Pages untuk menampilkan data yang diteruskan melalui URL atau <code>postMessage</code>.</p>
+    <pre id="result">Belum ada data.</pre>
+
+    <script>
+      const result = document.querySelector('#result');
+      const allowedOrigins = new Set([
+        'http://localhost',
+        'http://127.0.0.1',
+        'null'
+      ]);
+
+      function showData(data, source) {
+        const record = {
+          receivedAt: new Date().toISOString(),
+          source,
+          data
+        };
+
+        // Penyimpanan ini hanya ada di browser pengunjung, bukan di server GitHub Pages.
+        localStorage.setItem('ikur-poc-last-data', JSON.stringify(record));
+        result.textContent = JSON.stringify(record, null, 2);
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      const queryData = params.get('data') || window.location.hash.slice(1);
+      if (queryData) {
+        try {
+          showData(JSON.parse(queryData), 'URL');
+        } catch {
+          showData(queryData, 'URL');
+        }
+      } else {
+        const saved = localStorage.getItem('ikur-poc-last-data');
+        if (saved) result.textContent = saved;
+      }
+
+      window.addEventListener('message', (event) => {
+        if (!allowedOrigins.has(event.origin)) return;
+        showData(event.data, `postMessage dari ${event.origin}`);
+      });
+    </script>
+  </body>
+</html>
