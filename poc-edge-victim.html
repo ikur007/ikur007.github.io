@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tab B — Cross-Origin Victim (GitHub Pages)</title>
+
+  <!--
+    CSP via meta tag
+    Full enforcement requires server-side header —
+    GitHub Pages tidak support custom headers natively,
+    tapi meta CSP masih menunjukkan INTENT proteksi
+  -->
+  <meta http-equiv="Content-Security-Policy"
+        content="
+          default-src 'self' https:;
+          script-src 'self' 'nonce-GHPOCSP777';
+          style-src 'self' 'unsafe-inline';
+          connect-src 'self';
+          frame-ancestors 'none';
+          form-action 'self'
+        ">
+
+  <style>
+    body { font-family: sans-serif; background: #f0f4ff; color: #111; padding: 24px; max-width: 700px; }
+    h1 { color: #003399; font-size: 1.4em; }
+    .badge { background: #003399; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.8em; }
+    .shield { background: #e8f5e9; border: 2px solid #4caf50; padding: 10px; border-radius: 6px; margin: 10px 0; font-size: 0.82em; }
+    .data-box { background: #fff3e0; border: 1px solid #ff9800; padding: 14px; border-radius: 6px; margin: 10px 0; }
+    label { display: block; font-size: 0.83em; color: #555; margin: 8px 0 2px; }
+    input { padding: 6px 10px; width: 280px; border: 1px solid #ccc; border-radius: 4px; font-family: monospace; font-size: 0.85em; }
+    #status { background: #111; color: #4f4; padding: 10px; font-family: monospace; font-size: 0.8em; white-space: pre-wrap; min-height: 50px; border-radius: 4px; margin-top: 12px; }
+    .note { font-size: 0.8em; color: #888; }
+  </style>
+</head>
+<body>
+
+<h1>🏦 FakeBank Secure Portal <span class="badge">ikur007.github.io</span></h1>
+<p class="note">Security research PoC page — all data is fake/synthetic for testing purposes only.</p>
+
+<div class="shield">
+  <strong>CSP:</strong> <code>script-src 'self' 'nonce-GHPOCSP777'</code> &nbsp;|&nbsp;
+  <code>frame-ancestors 'none'</code><br>
+  <strong>Origin:</strong> https://ikur007.github.io
+</div>
+
+<!-- Canary sensitive data for cross-origin read test -->
+<div class="data-box">
+  <strong>Account Data (synthetic canary — for PoC only)</strong>
+  <form id="victim-form" autocomplete="on">
+    <label>Username</label>
+    <input type="text" name="username" autocomplete="username" value="gh_victim_user_001">
+
+    <label>Password</label>
+    <input type="password" name="password" autocomplete="current-password" value="GHPocPass#Victim!">
+
+    <label>Card Number</label>
+    <input type="text" name="cc_number" autocomplete="cc-number" value="5500-0000-0000-0004">
+
+    <label>CVV</label>
+    <input type="text" name="cc_csc" autocomplete="cc-csc" value="789">
+
+    <label>OTP / 2FA Code</label>
+    <input type="text" name="otp" autocomplete="one-time-code" value="334455">
+
+    <label>Account Number</label>
+    <input type="text" name="account" value="GH-CANARY-ACCT-IKUR007-XK992">
+  </form>
+
+  <input type="hidden" name="session_token" value="GH_SESSION_TOKEN_IKUR007_FAKE_XK29AZ">
+  <input type="hidden" name="csrf_token" value="GH_CSRF_FAKE_IKUR007_ABCDEF">
+</div>
+
+<p><strong>Balance:</strong> $77,884.33</p>
+<p><strong>Ref:</strong> TXN-GH-CANARY-IKUR007-XK992</p>
+<!-- CANARY_SENTINEL: GH_TABBLAYER5_CANARY_IKUR007_GITHUBPAGES -->
+
+<div id="status">Tab B (GitHub Pages) loaded. Listening for Tab A commands...</div>
+
+<script nonce="GHPOCSP777">
+// Tab A origin — update jika attacker URL berubah
+const ATTACKER_ORIGIN = 'http://localhost:8080';
+const statusEl = document.getElementById('status');
+
+function log(msg) {
+  statusEl.textContent += '\n' + msg;
+  console.log('[TabB-GH]', msg);
+}
+
+// ─────────────────────────────────────────
+// Sensitive JS variables (canary)
+// ─────────────────────────────────────────
+window.__sensitiveData = {
+  api_key:  'GH_CANARY_KEY_IKUR007_XK992',
+  session:  'GH_SESSION_TOKEN_IKUR007_FAKE_XK29AZ',
+  user:     'gh_victim_user_001',
+  card:     '5500-0000-0000-0004',
+  cvv:      '789',
+  otp:      '334455',
+  balance:  '$77,884.33',
+  account:  'GH-CANARY-ACCT-IKUR007-XK992',
+  canary:   'GH_CANARY_SENTINEL_GITHUBPAGES_IKUR007'
+};
+
+// ─────────────────────────────────────────
+// window.name canary
+// ─────────────────────────────────────────
+window.name = 'GH_SENSITIVE: user=gh_victim_user_001 card=5500-0000-0000-0004 otp=334455 session=GH_SESSION_FAKE';
+log('[init] window.name set with canary data');
+
+// ─────────────────────────────────────────
+// localStorage canary
+// ─────────────────────────────────────────
+try {
+  localStorage.setItem('tabB_gh_session', 'GH_LS_SESSION_IKUR007_FAKE');
+  localStorage.setItem('tabB_gh_user',    'gh_victim_user_001');
+  localStorage.setItem('tabB_gh_auth',    'GH_LS_AUTHTOKEN_IKUR007_ABCDEF');
+  log('[init] localStorage written');
+} catch(e) {
+  log('[init] localStorage: ' + e.message);
+}
+
+// ─────────────────────────────────────────
+// BroadcastChannel
+// BroadcastChannel = same-origin only by spec
+// Tab A (localhost:8080) should NOT receive from here
+// ─────────────────────────────────────────
+try {
+  const bc = new BroadcastChannel('l5_channel');
+  bc.onmessage = (e) => {
+    log('[BroadcastChannel] Msg received: ' + JSON.stringify(e.data).substring(0, 80));
+    if (e.data.type === 'execute') {
+      try {
+        eval(e.data.cmd);
+        log('[BroadcastChannel] 🚨 eval SUCCEEDED — cross-origin BC+eval bypass!');
+      } catch(err) {
+        log('[BroadcastChannel] eval blocked: ' + err.message);
+      }
+    }
+    if (e.data.type === 'broadcast_sensitive') {
+      bc.postMessage({
+        type: 'sensitive_broadcast',
+        from: location.origin,
+        data: window.__sensitiveData,
+        sensitive: true
+      });
+      log('[BroadcastChannel] Sensitive broadcast sent back');
+    }
+  };
+} catch(e) {
+  log('[BroadcastChannel] not supported: ' + e.message);
+}
+
+// ─────────────────────────────────────────
+// postMessage listener
+// ─────────────────────────────────────────
+window.addEventListener('message', (e) => {
+  log('[postMessage] from ' + e.origin + ': ' + JSON.stringify(e.data).substring(0, 80));
+
+  // C5: set window.name then navigate
+  if (e.data.type === 'set_name_navigate') {
+    window.name = 'GH_SENSITIVE_AFTER_NAV: card=5500-0000-0000-0004 otp=334455 session=GH_SESS_FAKE';
+    log('[C5] window.name set, navigating in 1.5s...');
+    setTimeout(() => { window.location.href = 'about:blank'; }, 1500);
+  }
+
+  // C7: postMessage wildcard
+  if (e.data.type === 'send_wildcard_postmessage') {
+    log('[C7] Sending postMessage targetOrigin="*" to opener...');
+    if (window.opener) {
+      window.opener.postMessage({
+        type: 'wildcard_pm_from_tabB_gh',
+        from: location.origin,
+        sensitive: true,
+        data: {
+          session: 'GH_SESSION_TOKEN_IKUR007_FAKE',
+          card:    '5500-0000-0000-0004',
+          user:    'gh_victim_user_001',
+          note:    'targetOrigin=* — any origin can receive this'
+        }
+      }, '*');
+    }
+  }
+
+  // Broadcast trigger
+  if (e.data.type === 'broadcast_sensitive') {
+    try {
+      const bc2 = new BroadcastChannel('l5_channel');
+      bc2.postMessage({
+        type: 'sensitive_from_gh',
+        from: location.origin,
+        data: window.__sensitiveData,
+        sensitive: true
+      });
+      log('[C6] Broadcast sent on l5_channel');
+    } catch(e) { log('[C6] BC error: ' + e.message); }
+  }
+});
+
+// ─────────────────────────────────────────
+// Notify opener (Tab A) that Tab B is ready
+// ─────────────────────────────────────────
+if (window.opener) {
+  try {
+    window.opener.postMessage({
+      type: 'tabB_ready',
+      origin: location.origin,
+      host: 'github.io',
+      msg: 'Cross-origin Tab B (GitHub Pages) ready'
+    }, '*'); // wildcard karena kita tidak tau exact attacker origin
+    log('[init] Notified Tab A opener');
+  } catch(e) {
+    log('[init] Could not notify opener: ' + e.message);
+  }
+} else {
+  log('[init] No opener — opened directly (not by Tab A)');
+}
+
+log('[init] All canary data loaded. Waiting for Tab A cross-origin attacks.');
+</script>
+
+</body>
+</html>
