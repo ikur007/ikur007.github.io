@@ -16,7 +16,7 @@
 
       document.getElementById("run").onclick = async () => {
         const output = document.getElementById("result");
-        output.textContent = "Mengirim request GET tanpa body...";
+        output.textContent = "Mengirim request...";
 
         try {
           const response = await fetch(endpoint, {
@@ -24,14 +24,31 @@
             credentials: "include",
           });
 
-          // Jangan tampilkan atau simpan data respons.
           const body = await response.text();
+
+          // Ambil semua response headers yang bisa dibaca browser
+          const headers = {};
+          const targetHeaders = [
+            "access-control-allow-origin",
+            "access-control-allow-credentials",
+            "access-control-allow-methods",
+            "access-control-allow-headers",
+            "content-type",
+            "x-backend-host",
+            "x-gateway-host",
+            "server",
+            "date",
+          ];
+          targetHeaders.forEach((key) => {
+            const val = response.headers.get(key);
+            if (val) headers[key] = val;
+          });
 
           output.textContent = JSON.stringify(
             {
               browserCanReadResponse: true,
               status: response.status,
-              contentType: response.headers.get("content-type"),
+              responseHeaders: headers,
               responseLength: body.length,
               responseBody: body,
             },
